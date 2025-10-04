@@ -1,0 +1,25 @@
+ipykernel
+pandas
+numpy
+matplotlib
+plotly
+seaborn
+scipy
+scikit-learn
+imblearn
+xgboost
+catboost
+pymongo    # for mongodb
+from_root
+evidently==0.2.8
+dill
+PyYAML   # for yaml files
+neuro_mf
+boto3         # for AWS S3
+mypy-boto3-s3
+botocore
+fastapi    # for frontend
+uvicorn
+jinja2
+python-multipart
+-e .
