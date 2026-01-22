@@ -1,11 +1,115 @@
-# USvisa_approval_systmm
+# 🇺🇸 US Visa Approval Prediction System
 
-tHIS IS MY FIRST END TO END PROJECT FOR MLOPS.
+![Python](https://img.shields.io/badge/Python-3.8%2B-blue)
+![Framework](https://img.shields.io/badge/Framework-Flask-red)
+![ML](https://img.shields.io/badge/Library-Scikit--Learn-orange)
+![Docker](https://img.shields.io/badge/Container-Docker-blue)
+![Status](https://img.shields.io/badge/Status-Completed-success)
 
-OS library:- fused to manipulate the directories in the files 
-            : path function is used to interact with OS directories 
+## 📌 Project Overview
+The **US Visa Approval Prediction System** is an end-to-end Machine Learning solution designed to predict whether a visa application will be **Certified** or **Denied** based on applicant and employer data.
 
-            
-pathlib:- used to manage the path used in the project  
-            : split function is used to srgregate the folders and its contents.returns the whole path in form of tuple when the slash occurs.
+The project handles the full lifecycle of an ML application: from data ingestion and sophisticated preprocessing to model training and deployment. It addresses key challenges like **severe class imbalance** and **categorical complexity** to achieve a **96.83% accuracy**.
 
+## 🚀 Key Features
+* **End-to-End Pipeline:** Modular code structure covering Data Ingestion → Data Transformation → Model Training → Prediction.
+* **Robust Preprocessing:** * **Imbalance Handling:** Utilized **SMOTEENN** (combining oversampling and undersampling) to manage skewed data.
+    * **Feature Engineering:** Applied Power Transformer, OneHot Encoding, and Ordinal Encoding.
+* **Model Selection:** Extensive experimentation with Random Forest, XGBoost, CatBoost, and KNN. 
+    * 🏆 **Winner:** **K-Nearest Neighbors (KNN)** outperformed ensemble methods after hyperparameter tuning.
+* **Deployment Ready:** Containerized using **Docker** and served via a **Flask API**.
+* **Database Integration:** MongoDB used for storing training metadata and logs.
+
+## 📊 Model Performance
+This model was rigorously tested, yielding high performance across all critical metrics:
+
+| Metric | Score |
+| :--- | :--- |
+| **Accuracy** | **96.83%** |
+| **F1-Score** | 97.1% |
+| **Precision** | 95.8% |
+| **Recall (Denied Class)** | **98.5%** |
+| **ROC-AUC** | ~96.7% |
+
+*The high recall on the "Denied" class ensures that the model is exceptionally good at flagging potential rejections, a critical requirement for this domain.*
+
+## 🛠️ Tech Stack
+* **Language:** Python
+* **Libraries:** Scikit-learn, Pandas, NumPy, Matplotlib, Seaborn, Imbalanced-learn
+* **Web Framework:** Flask
+* **Containerization:** Docker
+* **Database:** MongoDB
+* **CI/CD:** GitHub Actions (configured in workflows)
+
+## 📂 Project Structure
+```bash
+USvisa_approval_systmm/
+├── config/              # Configuration files
+├── notebook/            # Jupyter notebooks for EDA and experiments
+├── us_visa/             # Main source code package
+│   ├── components/      # Data Ingestion, Transformation, Training modules
+│   ├── pipeline/        # Training and Prediction pipelines
+│   ├── constant/        # Constant variables
+│   ├── entity/          # Dataclasses for artifacts and config
+│   ├── utils/           # Helper functions
+│   └── logger.py        # Logging configuration
+├── app.py               # Flask application entry point
+├── demo.py              # Script for testing
+├── Dockerfile           # Docker configuration
+├── requirements.txt     # Project dependencies
+└── setup.py             # Package setup
+
+🏃‍♂️ Getting Started
+Prerequisites
+Python 3.8+
+
+MongoDB Atlas Account (or local MongoDB)
+
+Docker (optional, for containerization)
+
+Installation
+Clone the repository
+
+Bash
+
+git clone [https://github.com/PanchalAnubhav/USvisa_approval_systmm.git](https://github.com/PanchalAnubhav/USvisa_approval_systmm.git)
+cd USvisa_approval_systmm
+Create a Virtual Environment
+
+Bash
+
+conda create -n visa python=3.8 -y
+conda activate visa
+Install Dependencies
+
+Bash
+
+pip install -r requirements.txt
+Set Environment Variables Create a .env file or export your MongoDB URL:
+
+Bash
+
+export MONGODB_URL="your_mongodb_connection_string"
+Run the Application
+
+Bash
+
+python app.py
+Access the web app at http://localhost:5000
+
+🐳 Running with Docker
+Build the Image
+
+Bash
+
+docker build -t us-visa-app .
+Run the Container
+
+Bash
+
+docker run -p 5000:5000 us-visa-app
+📜 License
+Distributed under the MIT License. See LICENSE for more information.
+
+🤝 Contact
+Anubhav Panchal LinkedIn | GitHub
