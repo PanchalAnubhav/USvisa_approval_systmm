@@ -1,3 +1,5 @@
+Markdown
+
 # 🇺🇸 US Visa Approval Prediction System
 
 ![Python](https://img.shields.io/badge/Python-3.8%2B-blue)
@@ -42,74 +44,48 @@ This model was rigorously tested, yielding high performance across all critical 
 * **CI/CD:** GitHub Actions (configured in workflows)
 
 ## 📂 Project Structure
-```bash
-USvisa_approval_systmm/
-├── config/              # Configuration files
-├── notebook/            # Jupyter notebooks for EDA and experiments
-├── us_visa/             # Main source code package
-│   ├── components/      # Data Ingestion, Transformation, Training modules
-│   ├── pipeline/        # Training and Prediction pipelines
-│   ├── constant/        # Constant variables
-│   ├── entity/          # Dataclasses for artifacts and config
-│   ├── utils/           # Helper functions
-│   └── logger.py        # Logging configuration
-├── app.py               # Flask application entry point
-├── demo.py              # Script for testing
-├── Dockerfile           # Docker configuration
-├── requirements.txt     # Project dependencies
-└── setup.py             # Package setup
+* **config/**: Configuration files
+* **notebook/**: Jupyter notebooks for EDA and experiments
+* **us_visa/**: Main source code package
+  * `components/`: Data Ingestion, Transformation, Training modules
+  * `pipeline/`: Training and Prediction pipelines
+  * `entity/`: Dataclasses for artifacts and config
+  * `logger.py`: Logging configuration
+* **app.py**: Flask application entry point
+* **Dockerfile**: Docker configuration
+* **requirements.txt**: Project dependencies
 
-🏃‍♂️ Getting Started
-Prerequisites
+# 🏃‍♂️ Getting Started
+
+## Prerequisites
 Python 3.8+
 
 MongoDB Atlas Account (or local MongoDB)
 
 Docker (optional, for containerization)
 
-Installation
+## Installation
 Clone the repository
-
-Bash
-
 git clone [https://github.com/PanchalAnubhav/USvisa_approval_systmm.git](https://github.com/PanchalAnubhav/USvisa_approval_systmm.git)
 cd USvisa_approval_systmm
-Create a Virtual Environment
 
-Bash
+## Create a Virtual Environment
 
 conda create -n visa python=3.8 -y
 conda activate visa
-Install Dependencies
 
-Bash
+## Install Dependencies
 
 pip install -r requirements.txt
 Set Environment Variables Create a .env file or export your MongoDB URL:
-
-Bash
-
 export MONGODB_URL="your_mongodb_connection_string"
-Run the Application
 
-Bash
 
-python app.py
-Access the web app at http://localhost:5000
-
-🐳 Running with Docker
+## 🐳 Running with Docker
 Build the Image
-
-Bash
-
 docker build -t us-visa-app .
 Run the Container
-
-Bash
-
 docker run -p 5000:5000 us-visa-app
+
 📜 License
 Distributed under the MIT License. See LICENSE for more information.
-
-🤝 Contact
-Anubhav Panchal LinkedIn | GitHub
