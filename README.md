@@ -1,91 +1,50 @@
-Markdown
-
-# 🇺🇸 US Visa Approval Prediction System
-
-![Python](https://img.shields.io/badge/Python-3.8%2B-blue)
-![Framework](https://img.shields.io/badge/Framework-Flask-red)
-![ML](https://img.shields.io/badge/Library-Scikit--Learn-orange)
-![Docker](https://img.shields.io/badge/Container-Docker-blue)
-![Status](https://img.shields.io/badge/Status-Completed-success)
+# U.S. Visa Approval Prediction System 🇺🇸✈️
 
 ## 📌 Project Overview
-The **US Visa Approval Prediction System** is an end-to-end Machine Learning solution designed to predict whether a visa application will be **Certified** or **Denied** based on applicant and employer data.
 
-The project handles the full lifecycle of an ML application: from data ingestion and sophisticated preprocessing to model training and deployment. It addresses key challenges like **severe class imbalance** and **categorical complexity** to achieve a **96.83% accuracy**.
+The **U.S. Visa Approval Prediction System** is a machine learning project designed to classify and predict the approval outcomes of U.S. Visa applications based on historical applicant data. By leveraging advanced data preprocessing and foundational classification algorithms, this project uncovers patterns in applicant features that influence visa decisions.
 
-## 🚀 Key Features
-* **End-to-End Pipeline:** Modular code structure covering Data Ingestion → Data Transformation → Model Training → Prediction.
-* **Robust Preprocessing:** * **Imbalance Handling:** Utilized **SMOTEENN** (combining oversampling and undersampling) to manage skewed data.
-    * **Feature Engineering:** Applied Power Transformer, OneHot Encoding, and Ordinal Encoding.
-* **Model Selection:** Extensive experimentation with Random Forest, XGBoost, CatBoost, and KNN. 
-    * 🏆 **Winner:** **K-Nearest Neighbors (KNN)** outperformed ensemble methods after hyperparameter tuning.
-* **Deployment Ready:** Containerized using **Docker** and served via a **Flask API**.
-* **Database Integration:** MongoDB used for storing training metadata and logs.
+## 🚀 Features
+
+* **Exploratory Data Analysis (EDA):** Deep dive into the dataset to uncover trends, correlations, and outliers using Matplotlib and Seaborn.
+
+* **Robust Data Preprocessing:** Automated handling of missing values and categorical encoding.
+
+* **Class Imbalance Handling:** Corrected skewed data distributions to prevent model bias towards the majority class.
+
+* **Model Training & Optimization:** Evaluated multiple classification algorithms (e.g., Logistic Regression, Decision Trees/Random Forest) to determine the highest predictive accuracy.
+
+* **Performance Metrics:** Evaluated using Accuracy, Precision, Recall, and F1-Score.
+
+## 🛠️ Technology Stack
+
+* **Language:** Python
+
+* **Data Manipulation:** Pandas, NumPy
+
+* **Machine Learning:** Scikit-Learn
+
+* **Data Visualization:** Matplotlib, Seaborn
 
 ## 📊 Model Performance
+
 This model was rigorously tested, yielding high performance across all critical metrics:
 
-| Metric | Score |
-| :--- | :--- |
-| **Accuracy** | **96.83%** |
-| **F1-Score** | 97.1% |
-| **Precision** | 95.8% |
-| **Recall (Denied Class)** | **98.5%** |
-| **ROC-AUC** | ~96.7% |
+| **Metric** | **Score** | 
+| **Accuracy** | **96.83%** | 
+| **F1-Score** | 97.1% | 
+| **Precision** | 95.8% | 
+| **Recall (Denied Class)** | **98.5%** | 
+| **ROC-AUC** | ~96.7% | 
 
-*The high recall on the "Denied" class ensures that the model is exceptionally good at flagging potential rejections, a critical requirement for this domain.*
+## 💻 How to Run Locally
 
-## 🛠️ Tech Stack
-* **Language:** Python
-* **Libraries:** Scikit-learn, Pandas, NumPy, Matplotlib, Seaborn, Imbalanced-learn
-* **Web Framework:** Flask
-* **Containerization:** Docker
-* **Database:** MongoDB
-* **CI/CD:** GitHub Actions (configured in workflows)
+1. **Clone the repository:**
+   ```bash
+   git clone [https://github.com/PanchalAnubhav/USvisa_approval_systmm.git](https://github.com/PanchalAnubhav/USvisa_approval_systmm.git)
+   cd USvisa_approval_systmm
+   
+Run the Jupyter Notebook:
+jupyter notebook
 
-## 📂 Project Structure
-* **config/**: Configuration files
-* **notebook/**: Jupyter notebooks for EDA and experiments
-* **us_visa/**: Main source code package
-  * `components/`: Data Ingestion, Transformation, Training modules
-  * `pipeline/`: Training and Prediction pipelines
-  * `entity/`: Dataclasses for artifacts and config
-  * `logger.py`: Logging configuration
-* **app.py**: Flask application entry point
-* **Dockerfile**: Docker configuration
-* **requirements.txt**: Project dependencies
-
-# 🏃‍♂️ Getting Started
-
-## Prerequisites
-Python 3.8+
-
-MongoDB Atlas Account (or local MongoDB)
-
-Docker (optional, for containerization)
-
-## Installation
-Clone the repository
-git clone [https://github.com/PanchalAnubhav/USvisa_approval_systmm.git](https://github.com/PanchalAnubhav/USvisa_approval_systmm.git)
-cd USvisa_approval_systmm
-
-## Create a Virtual Environment
-
-conda create -n visa python=3.8 -y
-conda activate visa
-
-## Install Dependencies
-
-pip install -r requirements.txt
-Set Environment Variables Create a .env file or export your MongoDB URL:
-export MONGODB_URL="your_mongodb_connection_string"
-
-
-## 🐳 Running with Docker
-Build the Image
-docker build -t us-visa-app .
-Run the Container
-docker run -p 5000:5000 us-visa-app
-
-📜 License
-Distributed under the MIT License. See LICENSE for more information.
+Open the main notebook file to step through the EDA, preprocessing, and model training pipeline.
