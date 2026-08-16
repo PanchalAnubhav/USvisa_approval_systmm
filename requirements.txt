@@ -1,25 +1,44 @@
+# Core ML
+pandas>=2.0.0
+numpy>=1.24.0
+scikit-learn>=1.3.0
+imblearn
+xgboost>=2.0.0
+catboost>=1.2
+
+# Data processing
+scipy>=1.11.0
+dill
+PyYAML
+
+# MongoDB
+pymongo
+certifi
+
+# AWS
+boto3
+mypy-boto3-s3
+botocore
+
+# Web framework
+fastapi
+uvicorn[standard]
+jinja2
+python-multipart
+
+# Utilities
+from_root
+
+# Dev/notebook
 ipykernel
-pandas
-numpy
 matplotlib
 plotly
 seaborn
-scipy
-scikit-learn
-imblearn
-xgboost
-catboost
-pymongo    # for mongodb
-from_root
-evidently==0.2.8
-dill
-PyYAML   # for yaml files
-neuro_mf
-boto3         # for AWS S3
-mypy-boto3-s3
-botocore
-fastapi    # for frontend
-uvicorn
-jinja2
-python-multipart
+
+# Testing
+pytest
+pytest-cov
+httpx
+
+# Project self-install
 -e .
