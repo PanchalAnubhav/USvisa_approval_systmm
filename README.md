@@ -1,78 +1,146 @@
-# U.S. Visa Approval Prediction System ✈️
+# US Visa Approval Prediction System
 
-## 📌 Project Overview
-The **U.S. Visa Approval Prediction System** is a machine learning project designed to classify and predict the approval outcomes of U.S. Visa applications based on historical applicant data. By leveraging careful data preprocessing and a fair comparison across classification algorithms, this project uncovers patterns in applicant features that influence visa decisions.
+An end-to-end MLOps production-ready machine learning project that predicts whether a US visa application will be **Certified** or **Denied** based on applicant and employer features.
 
-> **Update:** An earlier version of this project reported 96-97%+ accuracy. That number was the result of a data leakage bug in the resampling pipeline (SMOTEENN was applied to the full dataset *before* the train/test split, letting synthetic points in the test set be built from real points in training). This has been found, fixed, and documented below — the honest, corrected result is **73.33% accuracy**. See [Model Performance](#-model-performance) for full details.
+## Architecture
 
-## 🚀 Features
-* **Exploratory Data Analysis (EDA):** Deep dive into the dataset to uncover trends, correlations, and outliers using Matplotlib and Seaborn.
-* **Robust Data Preprocessing:** Automated handling of missing values and categorical encoding.
-* **Class Imbalance Handling:** SMOTE resampling applied correctly — to the training set only, after the train/test split, to avoid data leakage.
-* **Model Training & Comparison:** Evaluated nine classification algorithms (Logistic Regression, Decision Tree, Random Forest, Gradient Boosting, AdaBoost, SVC, KNN, XGBoost, CatBoost) at baseline, then tuned the top four with `RandomizedSearchCV`.
-* **Performance Metrics:** Evaluated using Accuracy, Precision, Recall, and F1-Score — on an untouched, real-world-distributed test set.
-
-## 🛠️ Technology Stack
-* **Language:** Python
-* **Data Manipulation:** Pandas, NumPy
-* **Machine Learning:** Scikit-Learn, XGBoost, CatBoost, imbalanced-learn (SMOTE)
-* **Data Visualization:** Matplotlib, Seaborn
-
-## 📊 Model Performance
-
-**Final model: CatBoostClassifier (SMOTE-resampled, tuned via RandomizedSearchCV)**
-
-| **Metric** | **Score** |
-|---|---|
-| **Accuracy** | **73.33%** |
-| **Macro F1-Score** | 0.69 |
-| **Precision (Certified)** | 0.61 |
-| **Recall (Certified)** | 0.54 |
-| **Precision (Denied)** | 0.79 |
-| **Recall (Denied)** | 0.83 |
-
-Evaluated against a naive baseline (always predicting "Certified") of ~66.8% accuracy — so this model is doing genuine, meaningful work, not just exploiting class imbalance.
-
-**Known limitation:** recall on the "Certified" class is 0.54 — a resampling variant (SMOTEENN instead of SMOTE) trades ~3 points of accuracy for more balanced per-class recall (0.67-0.68 on both classes). Both variants are in the notebook; SMOTE was chosen as the default for this README's headline metric, but check the notebook if the precision/recall tradeoff matters for your use case.
-
-**Model comparison (top 4, tuned, SMOTE-resampled):**
-
-| Model | Accuracy | Macro F1 |
-|---|---|---|
-| **CatBoostClassifier** | **73.33%** | **0.69** |
-| XGBClassifier | 70.41% | 0.66 |
-| Random Forest Classifier | ~70% | ~0.66 |
-| KNeighborsClassifier | 65.13% | 0.62 |
-
-## 🐛 What Went Wrong (and How It Was Fixed)
-The original version of this project applied SMOTEENN resampling to the entire dataset *before* splitting into train and test sets, and selected KNN as the "best model" without re-validating that choice after tuning. This produced:
-- An inflated, leakage-driven accuracy of 96-97%+
-- A test set with an artificially balanced class distribution instead of the real ~66.7% / 33.2% split
-- A model (KNN) that, once evaluated fairly, turned out to be the *weakest* of the models tested, not the strongest
-
-The fix: the train/test split now happens first, on the original unresampled data (stratified, so the test set keeps the real class distribution). Resampling is applied only to the training set afterward. All four candidate models were then re-tuned and re-compared on this corrected pipeline — CatBoost came out ahead.
-
-This is documented here deliberately, not hidden, since it's a common and instructive mistake worth showing rather than erasing.
-
-## 💻 How to Run Locally
-1. **Clone the repository:**
-```bash
-   git clone https://github.com/PanchalAnubhav/USvisa_approval_systmm.git
-   cd USvisa_approval_systmm
+```
+┌─────────────┐    ┌──────────────┐    ┌───────────────────┐    ┌──────────────┐
+│  MongoDB     │───▶│ Data         │───▶│ Data              │───▶│ Data         │
+│  (Raw Data)  │    │ Ingestion    │    │ Validation        │    │ Transform    │
+└─────────────┘    └──────────────┘    └───────────────────┘    └──────┬───────┘
+                                                                       │
+┌─────────────┐    ┌──────────────┐    ┌───────────────────┐          │
+│  AWS S3     │◀───│ Model        │◀───│ Model             │◀─────────┘
+│  (Registry) │    │ Pusher       │    │ Trainer            │
+└─────────────┘    └──────────────┘    └───────────────────┘
+       │
+       ▼
+┌─────────────────────────────────┐
+│  FastAPI Prediction Service     │
+│  /predict  /train  /health      │
+└─────────────────────────────────┘
 ```
 
-2. **Set up a virtual environment and install dependencies:**
+## ML Pipeline
+
+| Stage | Description |
+|-------|-------------|
+| **Data Ingestion** | Exports data from MongoDB, splits into train/test |
+| **Data Validation** | Schema validation + KS-test drift detection |
+| **Data Transformation** | Feature engineering (company_age), encoding (OHE/Ordinal), scaling (StandardScaler/PowerTransformer), SMOTE resampling |
+| **Model Training** | Trains XGBoost, RandomForest, KNN, CatBoost with tuned hyperparams; selects best by F1 |
+| **Model Evaluation** | Compares new model against S3 production model |
+| **Model Pusher** | Pushes accepted model to AWS S3 registry |
+
+### Best Model (from notebook)
+- **CatBoostClassifier** — Accuracy: 73.3%, F1: 0.575
+- Hyperparameters: `learning_rate=0.1, l2_leaf_reg=3, iterations=300, depth=10`
+
+## Quick Start
+
+### Prerequisites
+- Python 3.10+
+- MongoDB Atlas account
+- AWS account (for S3 model registry)
+
+### Setup
+
 ```bash
-   python -m venv .venv
-   source .venv/bin/activate   # Windows: .venv\Scripts\activate
-   pip install pandas numpy matplotlib seaborn scikit-learn imbalanced-learn xgboost catboost jupyter nbconvert
+# Clone and enter project
+git clone <your-repo-url>
+cd USvisa_approval_systmm
+
+# Create virtual environment
+conda create -n visa python=3.10 -y
+conda activate visa
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Set environment variables
+cp .env.example .env
+# Edit .env with your MongoDB URL and AWS credentials
 ```
 
-3. **Run the Jupyter Notebook:**
-```bash
-   jupyter notebook
-```
-   Open the main notebook file to step through the EDA, preprocessing, corrected train/test split, resampling, model training, and evaluation.
+### Environment Variables
 
-## ⚠️ Usage Limitations
-This model is intended for **educational and research purposes only** — not for actual immigration decision-making. Visa outcomes depend on complex legal, policy, and human factors well beyond the scope of this dataset, and the model has not undergone formal fairness auditing across demographic subgroups.
+```bash
+export MONGODB_URL="mongodb+srv://<username>:<password>@..."
+export AWS_ACCESS_KEY_ID=<your_key>
+export AWS_SECRET_ACCESS_KEY=<your_secret>
+```
+
+### Run
+
+```bash
+# Start the API server
+uvicorn app:app --host 0.0.0.0 --port 8080 --reload
+
+# Or use Makefile
+make run
+
+# Trigger training pipeline
+curl http://localhost:8080/train
+
+# Health check
+curl http://localhost:8080/health
+```
+
+### Docker
+
+```bash
+# Build
+docker build -t usvisa-app -f DockerFile .
+
+# Run
+docker-compose up -d
+```
+
+## Project Structure
+
+```
+USvisa_approval_systmm/
+├── app.py                      # FastAPI application
+├── config/
+│   ├── model.yaml              # Model hyperparameter configs
+│   └── schema.yaml             # Data schema & feature groups
+├── us_visa/
+│   ├── cloud_storage/          # AWS S3 operations
+│   ├── components/             # ML pipeline components
+│   │   ├── data_ingestion.py
+│   │   ├── data_validation.py
+│   │   ├── data_transformation.py
+│   │   ├── model_trainer.py
+│   │   ├── model_evaluation.py
+│   │   └── model_pusher.py
+│   ├── configuration/          # MongoDB & AWS connections
+│   ├── constants/              # Project-wide constants
+│   ├── data_access/            # MongoDB data access layer
+│   ├── entity/                 # Data classes (configs, artifacts, estimators)
+│   ├── exception/              # Custom exception handling
+│   ├── logger/                 # Logging configuration
+│   ├── pipeline/               # Training & prediction pipelines
+│   └── utils/                  # Utility functions
+├── tests/                      # Unit & integration tests
+├── notebook/                   # EDA & model training notebooks
+├── DockerFile                  # Container configuration
+├── docker-compose.yml          # Local orchestration
+├── Makefile                    # Development commands
+├── requirements.txt            # Python dependencies
+└── .github/workflows/aws.yaml # CI/CD pipeline
+```
+
+## Workflow
+
+1. `constants` → 2. `entity` → 3. `components` → 4. `pipeline` → 5. `app.py`
+
+## CI/CD
+
+GitHub Actions workflow (`.github/workflows/aws.yaml`):
+1. **CI**: Install deps → Run tests → Build Docker image → Push to ECR
+2. **CD**: Pull image on EC2 → Stop old container → Start new container
+
+## License
+
+MIT License
