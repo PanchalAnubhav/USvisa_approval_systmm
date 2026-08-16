@@ -20,7 +20,7 @@ boto3
 mypy-boto3-s3
 botocore
 
-# Web framework
+# Web API
 fastapi
 uvicorn[standard]
 jinja2
@@ -29,16 +29,10 @@ python-multipart
 # Utilities
 from_root
 
-# Dev/notebook
-ipykernel
-matplotlib
-plotly
-seaborn
-
 # Testing
 pytest
 pytest-cov
 httpx
 
-# Project self-install
+# Project
 -e .
