@@ -80,12 +80,12 @@ class ModelEvaluation:
 
             # Feature engineering (same as data_transformation)
             if "case_id" in test_df.columns:
-                test_df = test_df.drop(columns=["case_id"], axis=1)
+                test_df = test_df.drop(columns=["case_id"])
             if "yr_of_estab" in test_df.columns:
                 test_df["company_age"] = CURRENT_YEAR - test_df["yr_of_estab"]
-                test_df = test_df.drop(columns=["yr_of_estab"], axis=1)
+                test_df = test_df.drop(columns=["yr_of_estab"])
 
-            x_test = test_df.drop(columns=[TARGET_COLUMN], axis=1)
+            x_test = test_df.drop(columns=[TARGET_COLUMN])
             y_test = test_df[TARGET_COLUMN]
 
             # Encode target
