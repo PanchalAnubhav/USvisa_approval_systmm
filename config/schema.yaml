@@ -15,7 +15,6 @@ columns:
 numerical_columns:
   - no_of_employees
   - prevailing_wage
-  - company_age
 
 categorical_columns:
   - continent
@@ -42,6 +41,5 @@ or_columns:
 
 transform_columns:
   - no_of_employees
-  - company_age
 
 target_column: case_status
