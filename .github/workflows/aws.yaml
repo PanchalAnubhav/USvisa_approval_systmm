@@ -1,99 +1,267 @@
-name: Deploy Application Docker Image to EC2 instance
+name: US Visa CI/CD
 
 on:
+
   push:
-    branches: [main]
+    branches:
+      - main
+
+  pull_request:
+    branches:
+      - main
+
+
+permissions:
+  contents: read
+
+
+env:
+  AWS_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+  ECR_REPOSITORY: ${{ secrets.ECR_REPO }}
+
 
 jobs:
-  Continuous-Integration:
+
+  # ============================================================
+  # CI
+  # ============================================================
+
+  test:
+
+    name: Test Application
+
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Python
+
+      - name: Setup Python
         uses: actions/setup-python@v5
+
         with:
           python-version: "3.10"
+          cache: "pip"
+
 
       - name: Install dependencies
         run: |
+
           python -m pip install --upgrade pip
+
           pip install -r requirements.txt
+
 
       - name: Run tests
         run: |
-          pytest tests/ -v --tb=short || true
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
+          pytest tests/ \
+            -v \
+            --tb=short
 
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build, tag, and push image to Amazon ECR
-        id: build-image
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: ${{ secrets.ECR_REPO }}
-          IMAGE_TAG: latest
-        run: |
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -f DockerFile .
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+  # ============================================================
+  # BUILD + PUSH
+  # ============================================================
 
-  Continuous-Deployment:
-    needs: Continuous-Integration
-    runs-on: self-hosted
+  build:
+
+    name: Build and Push Docker Image
+
+    needs: test
+
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    runs-on: ubuntu-latest
+
+    outputs:
+
+      image_tag: ${{ steps.meta.outputs.image_tag }}
+
 
     steps:
-      - name: Checkout
+
+      - name: Checkout repository
         uses: actions/checkout@v4
+
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
+
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
 
+
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Pull latest image
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: ${{ secrets.ECR_REPO }}
-          IMAGE_TAG: latest
-        run: |
-          docker pull $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
-      - name: Stop and remove existing container
+      - name: Generate image tag
+        id: meta
+
         run: |
+
+          IMAGE_TAG="${GITHUB_SHA}"
+
+          echo "image_tag=${IMAGE_TAG}" >> "$GITHUB_OUTPUT"
+
+
+      - name: Build Docker image
+
+        env:
+
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ steps.meta.outputs.image_tag }}
+
+        run: |
+
+          docker build \
+            -f Dockerfile \
+            -t "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" \
+            .
+
+
+      - name: Push Docker image
+
+        env:
+
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ steps.meta.outputs.image_tag }}
+
+        run: |
+
+          docker push \
+            "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+
+
+      - name: Tag latest
+
+        env:
+
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ steps.meta.outputs.image_tag }}
+
+        run: |
+
+          docker tag \
+            "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" \
+            "$ECR_REGISTRY/$ECR_REPOSITORY:latest"
+
+
+      - name: Push latest
+
+        env:
+
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+
+        run: |
+
+          docker push \
+            "$ECR_REGISTRY/$ECR_REPOSITORY:latest"
+
+
+  # ============================================================
+  # DEPLOY
+  # ============================================================
+
+  deploy:
+
+    name: Deploy to EC2
+
+    needs: build
+
+    runs-on: self-hosted
+
+
+    steps:
+
+      - name: Configure AWS credentials
+
+        uses: aws-actions/configure-aws-credentials@v4
+
+        with:
+
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+          aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
+
+
+      - name: Login to ECR
+
+        id: login-ecr
+
+        uses: aws-actions/amazon-ecr-login@v2
+
+
+      - name: Pull new image
+
+        env:
+
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+
+          IMAGE_TAG: ${{ github.sha }}
+
+        run: |
+
+          docker pull \
+            "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+
+
+      - name: Stop current container
+
+        run: |
+
           docker stop usvisa-app || true
+
           docker rm usvisa-app || true
 
-      - name: Run Docker Image to serve users
+
+      - name: Start new container
+
         env:
+
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: ${{ secrets.ECR_REPO }}
-          IMAGE_TAG: latest
+
+          IMAGE_TAG: ${{ github.sha }}
+
         run: |
-          docker run -d -p 8080:8080 \
+
+          docker run -d \
             --name usvisa-app \
-            -e AWS_ACCESS_KEY_ID="${{ secrets.AWS_ACCESS_KEY_ID }}" \
-            -e AWS_SECRET_ACCESS_KEY="${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
+            --restart unless-stopped \
+            -p 8080:8080 \
             -e AWS_DEFAULT_REGION="${{ secrets.AWS_DEFAULT_REGION }}" \
             -e MONGODB_URL="${{ secrets.MONGODB_URL }}" \
-            $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+            "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
 
-      - name: Clean up old Docker images
+
+      - name: Wait for application
+
         run: |
-          docker image prune -f
+
+          sleep 15
+
+
+      - name: Health check
+
+        run: |
+
+          curl \
+            --fail \
+            --retry 5 \
+            --retry-delay 5 \
+            http://localhost:8080/health
+
+
+      - name: Clean old Docker images
+
+        run: |
+
+          docker image prune -af
