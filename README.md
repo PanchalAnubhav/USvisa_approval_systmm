@@ -1,4 +1,4 @@
-# U.S. Visa Approval Prediction System 🇺🇸✈️
+# U.S. Visa Approval Prediction System✈️
 
 ## 📌 Project Overview
 
