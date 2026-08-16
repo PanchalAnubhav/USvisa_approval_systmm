@@ -1,37 +1,75 @@
+from typing import Optional
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import Response
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from starlette.responses import HTMLResponse, RedirectResponse
+from pydantic import BaseModel, Field
 from uvicorn import run as app_run
-
-from typing import Optional
 
 from us_visa.constants import APP_HOST, APP_PORT
 from us_visa.pipeline.prediction_pipeline import USvisaData, USvisaClassifier
-from us_visa.pipeline.training_pipeline import TrainPipeline
 
-app = FastAPI()
 
-app.mount("/static", StaticFiles(directory="static"), name="static")
+app = FastAPI(
+    title="US Visa Approval Prediction API",
+    version="1.0.0",
+    description="Production API for US visa approval prediction.",
+)
+
+
+app.mount(
+    "/static",
+    StaticFiles(directory="static"),
+    name="static",
+)
 
 templates = Jinja2Templates(directory="templates")
 
-origins = ["*"]
 
+# For production, replace "*" with your actual frontend/domain.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
 
 
+# ---------------------------------------------------------------------
+# API REQUEST SCHEMA
+# ---------------------------------------------------------------------
+
+class VisaApplication(BaseModel):
+    continent: str
+    education_of_employee: str
+    has_job_experience: str
+    requires_job_training: str
+
+    no_of_employees: int = Field(..., ge=0)
+
+    region_of_employment: str
+
+    prevailing_wage: float = Field(..., ge=0)
+
+    unit_of_wage: str
+    full_time_position: str
+
+    company_age: int = Field(..., ge=0, le=500)
+
+
+# ---------------------------------------------------------------------
+# HTML FORM DATA
+# ---------------------------------------------------------------------
+
 class DataForm:
+
     def __init__(self, request: Request):
-        self.request: Request = request
+
+        self.request = request
+
         self.continent: Optional[str] = None
         self.education_of_employee: Optional[str] = None
         self.has_job_experience: Optional[str] = None
@@ -44,7 +82,9 @@ class DataForm:
         self.company_age: Optional[str] = None
 
     async def get_usvisa_data(self):
+
         form = await self.request.form()
+
         self.continent = form.get("continent")
         self.education_of_employee = form.get("education_of_employee")
         self.has_job_experience = form.get("has_job_experience")
@@ -57,61 +97,191 @@ class DataForm:
         self.company_age = form.get("company_age")
 
 
-@app.get("/health")
+# ---------------------------------------------------------------------
+# COMMON PREDICTION FUNCTION
+# ---------------------------------------------------------------------
+
+def predict_application(data: VisaApplication):
+
+    usvisa_data = USvisaData(
+        continent=data.continent,
+        education_of_employee=data.education_of_employee,
+        has_job_experience=data.has_job_experience,
+        requires_job_training=data.requires_job_training,
+        no_of_employees=data.no_of_employees,
+        region_of_employment=data.region_of_employment,
+        prevailing_wage=data.prevailing_wage,
+        unit_of_wage=data.unit_of_wage,
+        full_time_position=data.full_time_position,
+        company_age=data.company_age,
+    )
+
+    dataframe = usvisa_data.get_usvisa_input_data_frame()
+
+    predictor = USvisaClassifier()
+
+    prediction = predictor.predict(
+        dataframe=dataframe
+    )[0]
+
+    prediction_value = int(prediction)
+
+    if prediction_value == 1:
+        prediction_text = "Visa-Approved"
+    else:
+        prediction_text = "Visa Not-Approved"
+
+    return {
+        "prediction": prediction_text,
+        "prediction_value": prediction_value,
+    }
+
+
+# ---------------------------------------------------------------------
+# HEALTH CHECK
+# ---------------------------------------------------------------------
+
+@app.get(
+    "/health",
+    tags=["system"],
+)
 async def health_check():
-    """Health check endpoint for container orchestration."""
-    return {"status": "ok"}
+
+    return {
+        "status": "ok"
+    }
 
 
-@app.get("/", tags=["authentication"])
+# ---------------------------------------------------------------------
+# WEB UI
+# ---------------------------------------------------------------------
+
+@app.get(
+    "/",
+    response_class=HTMLResponse,
+    tags=["web"],
+)
 async def index(request: Request):
-    return templates.TemplateResponse("usvisa.html", {"request": request, "context": "Rendering"})
+
+    return templates.TemplateResponse(
+        "usvisa.html",
+        {
+            "request": request,
+            "context": "Rendering",
+        },
+    )
 
 
-@app.get("/train")
-async def train_route():
-    """Trigger the full training pipeline."""
+# ---------------------------------------------------------------------
+# JSON PREDICTION API
+# ---------------------------------------------------------------------
+
+@app.post(
+    "/predict",
+    tags=["prediction"],
+)
+async def predict_api(data: VisaApplication):
+
     try:
-        train_pipeline = TrainPipeline()
-        train_pipeline.run_pipeline()
-        return Response("Training successful!")
+
+        result = predict_application(data)
+
+        return {
+            "status": True,
+            **result,
+        }
+
     except Exception as e:
-        return Response(f"Error Occurred! {e}")
+
+        return JSONResponse(
+            status_code=500,
+            content={
+                "status": False,
+                "error": str(e),
+            },
+        )
 
 
-@app.post("/")
+# ---------------------------------------------------------------------
+# HTML FORM PREDICTION
+# ---------------------------------------------------------------------
+
+@app.post(
+    "/",
+    tags=["web"],
+)
 async def predict_route(request: Request):
+
     try:
+
         form = DataForm(request)
+
         await form.get_usvisa_data()
 
-        usvisa_data = USvisaData(
+        data = VisaApplication(
             continent=form.continent,
             education_of_employee=form.education_of_employee,
             has_job_experience=form.has_job_experience,
             requires_job_training=form.requires_job_training,
-            no_of_employees=int(form.no_of_employees),
+
+            no_of_employees=int(
+                form.no_of_employees
+            ),
+
             region_of_employment=form.region_of_employment,
-            prevailing_wage=float(form.prevailing_wage),
+
+            prevailing_wage=float(
+                form.prevailing_wage
+            ),
+
             unit_of_wage=form.unit_of_wage,
             full_time_position=form.full_time_position,
-            company_age=int(form.company_age),
+
+            company_age=int(
+                form.company_age
+            ),
         )
 
-        usvisa_df = usvisa_data.get_usvisa_input_data_frame()
-        model_predictor = USvisaClassifier()
-        value = model_predictor.predict(dataframe=usvisa_df)[0]
-
-        status = "Visa-Approved" if value == 1 else "Visa Not-Approved"
+        result = predict_application(data)
 
         return templates.TemplateResponse(
             "usvisa.html",
-            {"request": request, "context": status},
+            {
+                "request": request,
+                "context": result["prediction"],
+            },
         )
 
     except Exception as e:
-        return {"status": False, "error": f"{e}"}
 
+        return JSONResponse(
+            status_code=400,
+            content={
+                "status": False,
+                "error": str(e),
+            },
+        )
+
+
+@app.get(
+    "/favicon.ico",
+    include_in_schema=False,
+)
+async def favicon():
+
+    return RedirectResponse(
+        url="/static/favicon.ico"
+    )
+
+
+# ---------------------------------------------------------------------
+# LOCAL DEVELOPMENT
+# ---------------------------------------------------------------------
 
 if __name__ == "__main__":
-    app_run(app, host=APP_HOST, port=APP_PORT)
+
+    app_run(
+        app,
+        host=APP_HOST,
+        port=APP_PORT,
+    )
