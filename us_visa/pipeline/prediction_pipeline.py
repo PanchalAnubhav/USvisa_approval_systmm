@@ -82,34 +82,94 @@ class USvisaData:
 
 
 class USvisaClassifier:
-    """
-    Prediction pipeline that loads the model from S3 and runs inference.
-    """
-    def __init__(self, prediction_pipeline_config: USvisaPredictorConfig = USvisaPredictorConfig()):
+
+    _model = None
+
+    def __init__(
+        self,
+        prediction_pipeline_config: USvisaPredictorConfig = None,
+    ):
+
         try:
-            self.prediction_pipeline_config = prediction_pipeline_config
-        except Exception as e:
-            raise USvisaException(e, sys)
 
-    def predict(self, dataframe: DataFrame) -> str:
-        """
-        Method Name :   predict
-        Description :   This method loads the model from S3 and makes a prediction.
+            if prediction_pipeline_config is None:
+                prediction_pipeline_config = USvisaPredictorConfig()
 
-        Output      :   Prediction result string ("Visa-Approved" or "Visa-Rejected")
-        On Failure  :   Write an exception log and then raise an exception
-        """
-        try:
-            logging.info("Entered predict method of USvisaClassifier class")
-
-            model = USvisaEstimator(
-                bucket_name=self.prediction_pipeline_config.model_bucket_name,
-                model_path=self.prediction_pipeline_config.model_s3_key,
+            self.prediction_pipeline_config = (
+                prediction_pipeline_config
             )
 
-            result = model.load_model().predict(dataframe)
+        except Exception as e:
 
-            return result
+            raise USvisaException(
+                e,
+                sys
+            ) from e
+
+
+    def _load_model(self):
+
+        try:
+
+            if USvisaClassifier._model is None:
+
+                logging.info(
+                    "Loading US Visa model from S3..."
+                )
+
+                model = USvisaEstimator(
+                    bucket_name=(
+                        self.prediction_pipeline_config
+                        .model_bucket_name
+                    ),
+
+                    model_path=(
+                        self.prediction_pipeline_config
+                        .model_s3_key
+                    ),
+                )
+
+                USvisaClassifier._model = (
+                    model.load_model()
+                )
+
+                logging.info(
+                    "US Visa model loaded successfully."
+                )
+
+            return USvisaClassifier._model
 
         except Exception as e:
-            raise USvisaException(e, sys)
+
+            raise USvisaException(
+                e,
+                sys
+            ) from e
+
+
+    def predict(self, dataframe: DataFrame):
+
+        try:
+
+            logging.info(
+                "Starting prediction."
+            )
+
+            model = self._load_model()
+
+            prediction = model.predict(
+                dataframe
+            )
+
+            logging.info(
+                "Prediction completed."
+            )
+
+            return prediction
+
+        except Exception as e:
+
+            raise USvisaException(
+                e,
+                sys
+            ) from e
