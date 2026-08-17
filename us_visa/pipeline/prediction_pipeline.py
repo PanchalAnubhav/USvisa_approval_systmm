@@ -6,10 +6,12 @@ import pandas as pd
 from pandas import DataFrame
 
 from us_visa.entity.config_entity import USvisaPredictorConfig
-from us_visa.entity.s3_estimator import USvisaEstimator
 from us_visa.exception import USvisaException
 from us_visa.logger import logging
-from us_visa.utils.main_utils import read_yaml_file
+from us_visa.utils.main_utils import load_object
+
+# Path to the locally stored production model (written by ModelPusher)
+LOCAL_MODEL_PATH = os.path.join("final_model", "model.pkl")
 
 
 class USvisaData:
@@ -108,43 +110,19 @@ class USvisaClassifier:
 
 
     def _load_model(self):
-
         try:
-
             if USvisaClassifier._model is None:
-
-                logging.info(
-                    "Loading US Visa model from S3..."
-                )
-
-                model = USvisaEstimator(
-                    bucket_name=(
-                        self.prediction_pipeline_config
-                        .model_bucket_name
-                    ),
-
-                    model_path=(
-                        self.prediction_pipeline_config
-                        .model_s3_key
-                    ),
-                )
-
-                USvisaClassifier._model = (
-                    model.load_model()
-                )
-
-                logging.info(
-                    "US Visa model loaded successfully."
-                )
-
+                if not os.path.exists(LOCAL_MODEL_PATH):
+                    raise FileNotFoundError(
+                        f"No trained model found at '{LOCAL_MODEL_PATH}'. "
+                        "Run the training pipeline (python demo.py) first."
+                    )
+                logging.info(f"Loading US Visa model from {LOCAL_MODEL_PATH} ...")
+                USvisaClassifier._model = load_object(file_path=LOCAL_MODEL_PATH)
+                logging.info("US Visa model loaded successfully.")
             return USvisaClassifier._model
-
         except Exception as e:
-
-            raise USvisaException(
-                e,
-                sys
-            ) from e
+            raise USvisaException(e, sys) from e
 
 
     def predict(self, dataframe: DataFrame):
