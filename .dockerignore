@@ -1,33 +1,31 @@
+# Version control & IDE
 .git
 .github
 .gitignore
+.agents
+.gemini
 
+# Environment variables
 .env
 .env.*
 
+# Virtual environments
 venv
 .venv
 env
 
+# Bytecode & caches
 __pycache__
 *.pyc
 *.pyo
-
 .pytest_cache
 .coverage
 htmlcov
 
-.ipynb_checkpoints
-
-notebook
-*.ipynb
-
+# Temporary files
 catboost_info
+*.log
 
-artifact
-artifacts
-logs
-
-*.csv
-
-README.md
+# Keep notebook/EasyVisa.csv for data ingestion fallback but ignore other notebooks
+notebook/*.ipynb
+.ipynb_checkpoints
