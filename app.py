@@ -1,10 +1,10 @@
+import os
 from typing import Optional
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field
 from uvicorn import run as app_run
 
@@ -18,14 +18,18 @@ app = FastAPI(
     description="Production API for US visa approval prediction.",
 )
 
-
 app.mount(
     "/static",
     StaticFiles(directory="static"),
     name="static",
 )
 
-templates = Jinja2Templates(directory="templates")
+TEMPLATE_PATH = os.path.join("templates", "usvisa.html")
+
+def render_html() -> HTMLResponse:
+    """Read and return the main HTML template as a direct HTMLResponse."""
+    with open(TEMPLATE_PATH, encoding="utf-8") as f:
+        return HTMLResponse(content=f.read())
 
 
 # For production, replace "*" with your actual frontend/domain.
@@ -162,12 +166,7 @@ async def health_check():
     tags=["web"],
 )
 async def index(request: Request):
-
-    return templates.TemplateResponse(
-        request=request,
-        name="usvisa.html",
-        context={"context": "Rendering"},
-    )
+    return render_html()
 
 
 # ---------------------------------------------------------------------
@@ -242,11 +241,7 @@ async def predict_route(request: Request):
 
         result = predict_application(data)
 
-        return templates.TemplateResponse(
-            request=request,
-            name="usvisa.html",
-            context={"context": result["prediction"]},
-        )
+        return render_html()
 
     except Exception as e:
 
