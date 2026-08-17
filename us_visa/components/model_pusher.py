@@ -7,7 +7,7 @@ from us_visa.logger import logging
 from us_visa.entity.artifact_entity import ModelPusherArtifact, ModelEvaluationArtifact
 from us_visa.entity.config_entity import ModelPusherConfig
 
-# Local production model destination — matches model_evaluation.py
+# Local destination for the accepted production model
 LOCAL_MODEL_DIR = "final_model"
 LOCAL_MODEL_PATH = os.path.join(LOCAL_MODEL_DIR, "model.pkl")
 
@@ -19,7 +19,7 @@ class ModelPusher:
         model_pusher_config: ModelPusherConfig,
     ):
         """
-        :param model_evaluation_artifact: Output reference of model evaluation artifact stage
+        :param model_evaluation_artifact: Output reference of data evaluation artifact stage
         :param model_pusher_config: Configuration for model pusher
         """
         self.model_evaluation_artifact = model_evaluation_artifact
@@ -28,9 +28,8 @@ class ModelPusher:
     def initiate_model_pusher(self) -> ModelPusherArtifact:
         """
         Method Name :   initiate_model_pusher
-        Description :   Copies the accepted trained model to the local production
-                         model store at final_model/model.pkl.
-                         (S3 push can be added later for cloud deployment.)
+        Description :   Copies the accepted trained model to the local final_model directory.
+                        (Local-only mode — no S3 upload required)
 
         Output      :   ModelPusherArtifact
         On Failure  :   Write an exception log and then raise an exception
@@ -39,18 +38,14 @@ class ModelPusher:
 
         try:
             trained_model_path = self.model_evaluation_artifact.trained_model_path
-
-            logging.info(
-                f"Pushing accepted model from {trained_model_path} → {LOCAL_MODEL_PATH}"
-            )
-
             os.makedirs(LOCAL_MODEL_DIR, exist_ok=True)
-            shutil.copy2(trained_model_path, LOCAL_MODEL_PATH)
 
-            logging.info(f"Model successfully saved to {LOCAL_MODEL_PATH}")
+            logging.info(f"Copying trained model from {trained_model_path} to {LOCAL_MODEL_PATH}")
+            shutil.copy(src=trained_model_path, dst=LOCAL_MODEL_PATH)
+            logging.info("Model copied successfully to final_model/model.pkl")
 
             model_pusher_artifact = ModelPusherArtifact(
-                bucket_name=LOCAL_MODEL_DIR,
+                bucket_name="local",
                 s3_model_path=LOCAL_MODEL_PATH,
             )
 

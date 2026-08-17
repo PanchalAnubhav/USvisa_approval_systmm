@@ -18,7 +18,7 @@ from us_visa.logger import logging
 from us_visa.entity.estimator import USvisaModel, TargetValueMapping
 from us_visa.utils.main_utils import load_object
 
-# Local path where the production-accepted model is stored
+# Path where the production model is stored locally (no S3 required)
 LOCAL_MODEL_PATH = os.path.join("final_model", "model.pkl")
 
 
