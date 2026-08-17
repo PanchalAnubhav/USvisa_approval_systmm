@@ -164,11 +164,9 @@ async def health_check():
 async def index(request: Request):
 
     return templates.TemplateResponse(
-        "usvisa.html",
-        {
-            "request": request,
-            "context": "Rendering",
-        },
+        request=request,
+        name="usvisa.html",
+        context={"context": "Rendering"},
     )
 
 
@@ -245,11 +243,9 @@ async def predict_route(request: Request):
         result = predict_application(data)
 
         return templates.TemplateResponse(
-            "usvisa.html",
-            {
-                "request": request,
-                "context": result["prediction"],
-            },
+            request=request,
+            name="usvisa.html",
+            context={"context": result["prediction"]},
         )
 
     except Exception as e:

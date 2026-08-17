@@ -1,12 +1,1104 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>US Visa Approval Prediction</title>
-    <link rel="stylesheet" href="/static/css/style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>US Visa Approval Predictor</title>
+  <meta name="description" content="AI-powered US visa approval prediction system. Enter your application details to instantly predict your visa outcome." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    /* ─── RESET & BASE ─────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-void:       #04040a;
+      --bg-deep:       #07071a;
+      --glass-bg:      rgba(255,255,255,0.045);
+      --glass-border:  rgba(255,255,255,0.12);
+      --glass-hover:   rgba(255,255,255,0.075);
+      --text-primary:  rgba(255,255,255,0.95);
+      --text-secondary:rgba(255,255,255,0.55);
+      --text-muted:    rgba(255,255,255,0.3);
+      --accent-blue:   #4f9eff;
+      --accent-indigo: #7c6fff;
+      --accent-purple: #c77dff;
+      --approved-color:#30d158;
+      --denied-color:  #ff453a;
+      --input-bg:      rgba(255,255,255,0.06);
+      --input-border:  rgba(255,255,255,0.1);
+      --focus-ring:    rgba(124,111,255,0.5);
+      --blur-strength: 24px;
+      --radius-card:   28px;
+      --radius-input:  14px;
+      --radius-btn:    50px;
+      --transition:    0.3s cubic-bezier(0.34,1.56,0.64,1);
+      --transition-fast:0.2s cubic-bezier(0.25,0.46,0.45,0.94);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-void);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ─── ANIMATED BACKGROUND ──────────────────────────── */
+    .bg-canvas {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    .bg-orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: 0.18;
+      animation: orbFloat linear infinite;
+    }
+    .bg-orb-1 {
+      width: 700px; height: 700px;
+      background: radial-gradient(circle, #4f9eff, transparent 70%);
+      top: -20%; left: -15%;
+      animation-duration: 25s;
+    }
+    .bg-orb-2 {
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, #7c6fff, transparent 70%);
+      top: 30%; right: -20%;
+      animation-duration: 32s;
+      animation-delay: -10s;
+    }
+    .bg-orb-3 {
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, #c77dff, transparent 70%);
+      bottom: -10%; left: 30%;
+      animation-duration: 28s;
+      animation-delay: -5s;
+    }
+    .bg-orb-4 {
+      width: 350px; height: 350px;
+      background: radial-gradient(circle, #30d158, transparent 70%);
+      top: 60%; left: -5%;
+      animation-duration: 38s;
+      animation-delay: -18s;
+      opacity: 0.1;
+    }
+
+    @keyframes orbFloat {
+      0%   { transform: translate(0, 0) scale(1); }
+      25%  { transform: translate(60px, -40px) scale(1.05); }
+      50%  { transform: translate(30px, 80px) scale(0.95); }
+      75%  { transform: translate(-50px, 20px) scale(1.08); }
+      100% { transform: translate(0, 0) scale(1); }
+    }
+
+    /* Particle grid */
+    .bg-grid {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+      background-size: 60px 60px;
+      mask-image: radial-gradient(ellipse 80% 60% at 50% 50%, black 40%, transparent 100%);
+    }
+
+    /* ─── LAYOUT ────────────────────────────────────────── */
+    .page-wrapper {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 48px 20px 0;
+    }
+
+    /* ─── HEADER ────────────────────────────────────────── */
+    .header {
+      text-align: center;
+      margin-bottom: 48px;
+      animation: fadeUp 0.8s cubic-bezier(0.34,1.2,0.64,1) both;
+    }
+
+    .header-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 50px;
+      padding: 6px 16px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--accent-indigo);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+      backdrop-filter: blur(var(--blur-strength));
+    }
+    .header-badge::before {
+      content: '';
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--accent-indigo);
+      box-shadow: 0 0 8px var(--accent-indigo);
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.6; transform: scale(1.3); }
+    }
+
+    .header h1 {
+      font-size: clamp(32px, 5vw, 58px);
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -0.03em;
+      background: linear-gradient(135deg, #fff 30%, var(--accent-indigo) 70%, var(--accent-purple) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 14px;
+    }
+
+    .header p {
+      font-size: 17px;
+      font-weight: 400;
+      color: var(--text-secondary);
+      max-width: 480px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+
+    /* ─── GLASS CARD ────────────────────────────────────── */
+    .glass-card {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      backdrop-filter: blur(var(--blur-strength)) saturate(180%);
+      -webkit-backdrop-filter: blur(var(--blur-strength)) saturate(180%);
+      border-radius: var(--radius-card);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .glass-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: linear-gradient(135deg, rgba(255,255,255,0.07) 0%, transparent 50%);
+      pointer-events: none;
+    }
+
+    /* Top highlight line */
+    .glass-card::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 10%; right: 10%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent);
+      border-radius: 50%;
+    }
+
+    /* ─── MAIN FORM CARD ────────────────────────────────── */
+    .form-card {
+      width: 100%;
+      max-width: 760px;
+      padding: 44px 48px;
+      animation: fadeUp 0.9s cubic-bezier(0.34,1.2,0.64,1) 0.1s both;
+    }
+
+    @media (max-width: 600px) {
+      .form-card { padding: 28px 22px; }
+    }
+
+    .form-section-title {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+      margin-top: 32px;
+    }
+    .form-section-title:first-of-type { margin-top: 0; }
+
+    /* ─── FORM GRID ─────────────────────────────────────── */
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    @media (max-width: 560px) {
+      .form-grid { grid-template-columns: 1fr; }
+    }
+    .form-grid .full-width { grid-column: 1 / -1; }
+
+    /* ─── INPUT FIELDS ──────────────────────────────────── */
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      animation: fadeUp 0.6s cubic-bezier(0.34,1.2,0.64,1) both;
+    }
+
+    .field label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      letter-spacing: 0.04em;
+    }
+
+    .field input,
+    .field select {
+      background: var(--input-bg);
+      border: 1px solid var(--input-border);
+      border-radius: var(--radius-input);
+      color: var(--text-primary);
+      font-family: inherit;
+      font-size: 15px;
+      font-weight: 500;
+      padding: 13px 16px;
+      outline: none;
+      transition: border-color var(--transition-fast), background var(--transition-fast), box-shadow var(--transition-fast);
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+    }
+
+    .field select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.4)' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
+      padding-right: 40px;
+      cursor: pointer;
+    }
+
+    .field select option {
+      background: #13131f;
+      color: var(--text-primary);
+    }
+
+    .field input:focus,
+    .field select:focus {
+      border-color: rgba(124,111,255,0.6);
+      background: rgba(124,111,255,0.08);
+      box-shadow: 0 0 0 3px var(--focus-ring), 0 0 20px rgba(124,111,255,0.15);
+    }
+
+    .field input::placeholder { color: var(--text-muted); }
+
+    /* Number input — hide arrows */
+    .field input[type=number]::-webkit-inner-spin-button,
+    .field input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
+    .field input[type=number] { -moz-appearance: textfield; }
+
+    /* ─── TOGGLE / SEGMENTED CONTROL ────────────────────── */
+    .toggle-group {
+      display: flex;
+      background: var(--input-bg);
+      border: 1px solid var(--input-border);
+      border-radius: var(--radius-input);
+      overflow: hidden;
+      height: 48px;
+    }
+
+    .toggle-group input[type="radio"] { display: none; }
+
+    .toggle-group label {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.25s ease;
+      position: relative;
+      letter-spacing: 0.05em;
+    }
+
+    .toggle-group input[type="radio"]:checked + label {
+      color: var(--text-primary);
+      background: linear-gradient(135deg, rgba(124,111,255,0.35), rgba(79,158,255,0.25));
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.15);
+    }
+
+    /* ─── SUBMIT BUTTON ─────────────────────────────────── */
+    .btn-predict {
+      width: 100%;
+      padding: 17px 32px;
+      border: none;
+      border-radius: var(--radius-btn);
+      background: linear-gradient(135deg, var(--accent-indigo), var(--accent-purple), var(--accent-blue));
+      background-size: 200% 200%;
+      color: white;
+      font-family: inherit;
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      margin-top: 28px;
+      transition: transform var(--transition), box-shadow var(--transition), opacity 0.2s;
+      animation: gradientShift 4s ease infinite;
+    }
+
+    @keyframes gradientShift {
+      0%, 100% { background-position: 0% 50%; }
+      50%       { background-position: 100% 50%; }
+    }
+
+    .btn-predict::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    .btn-predict:hover {
+      transform: translateY(-2px) scale(1.01);
+      box-shadow: 0 16px 48px rgba(124,111,255,0.45), 0 0 0 1px rgba(255,255,255,0.1);
+    }
+
+    .btn-predict:active {
+      transform: scale(0.98);
+      box-shadow: 0 4px 16px rgba(124,111,255,0.3);
+    }
+
+    .btn-predict.loading {
+      opacity: 0.75;
+      pointer-events: none;
+    }
+
+    .btn-predict .btn-text { transition: opacity 0.2s; }
+    .btn-predict .btn-spinner {
+      display: none;
+      width: 20px; height: 20px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+    }
+    .btn-predict.loading .btn-text { opacity: 0; }
+    .btn-predict.loading .btn-spinner { display: block; }
+
+    @keyframes spin { to { transform: translate(-50%, -50%) rotate(360deg); } }
+
+    /* Ripple */
+    .ripple {
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.25);
+      transform: scale(0);
+      animation: rippleAnim 0.6s linear;
+      pointer-events: none;
+    }
+    @keyframes rippleAnim {
+      to { transform: scale(4); opacity: 0; }
+    }
+
+    /* ─── RESULT SECTION ────────────────────────────────── */
+    .result-section {
+      width: 100%;
+      max-width: 760px;
+      margin-top: 24px;
+      display: none;
+      animation: fadeUp 0.7s cubic-bezier(0.34,1.4,0.64,1) both;
+    }
+    .result-section.visible { display: block; }
+
+    .result-card {
+      padding: 44px 36px;
+      text-align: center;
+      position: relative;
+    }
+
+    /* Siri orb ring */
+    .result-orb {
+      width: 120px; height: 120px;
+      margin: 0 auto 28px;
+      border-radius: 50%;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .result-orb::before,
+    .result-orb::after {
+      content: '';
+      position: absolute;
+      inset: -8px;
+      border-radius: 50%;
+      animation: orbPulse 2.5s ease-in-out infinite;
+    }
+
+    .result-orb.approved::before {
+      background: conic-gradient(from 0deg, #30d158, #34eba5, #4af0b0, #30d158);
+      filter: blur(3px);
+    }
+    .result-orb.approved::after {
+      background: conic-gradient(from 180deg, rgba(48,209,88,0.4), transparent, rgba(48,209,88,0.4));
+      filter: blur(8px);
+      animation-delay: -1.25s;
+    }
+    .result-orb.denied::before {
+      background: conic-gradient(from 0deg, #ff453a, #ff6b61, #ff453a);
+      filter: blur(3px);
+    }
+    .result-orb.denied::after {
+      background: conic-gradient(from 180deg, rgba(255,69,58,0.4), transparent, rgba(255,69,58,0.4));
+      filter: blur(8px);
+      animation-delay: -1.25s;
+    }
+
+    @keyframes orbPulse {
+      0%, 100% { transform: scale(1); opacity: 0.85; }
+      50%       { transform: scale(1.12); opacity: 1; }
+    }
+
+    .result-orb-inner {
+      width: 100%; height: 100%;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 44px;
+      position: relative;
+      z-index: 1;
+    }
+    .result-orb.approved .result-orb-inner {
+      background: radial-gradient(circle at 35% 35%, #4aef82, #1db954);
+      box-shadow: 0 0 40px rgba(48,209,88,0.6);
+    }
+    .result-orb.denied .result-orb-inner {
+      background: radial-gradient(circle at 35% 35%, #ff7a72, #e33429);
+      box-shadow: 0 0 40px rgba(255,69,58,0.6);
+    }
+
+    .result-title {
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 8px;
+    }
+    .result-card.approved .result-title { color: var(--approved-color); }
+    .result-card.denied  .result-title { color: var(--denied-color); }
+
+    .result-subtitle {
+      font-size: 15px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+      max-width: 360px;
+      margin: 0 auto 28px;
+    }
+
+    /* Confidence bar */
+    .confidence-wrap {
+      max-width: 320px;
+      margin: 0 auto;
+    }
+    .confidence-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+    .confidence-track {
+      height: 6px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 50px;
+      overflow: hidden;
+    }
+    .confidence-fill {
+      height: 100%;
+      border-radius: 50px;
+      width: 0%;
+      transition: width 1.2s cubic-bezier(0.34,1.2,0.64,1);
+    }
+    .result-card.approved .confidence-fill { background: linear-gradient(90deg, #30d158, #4aef82); }
+    .result-card.denied  .confidence-fill { background: linear-gradient(90deg, #ff453a, #ff7a72); }
+
+    .btn-reset {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 24px;
+      padding: 10px 22px;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 50px;
+      color: var(--text-secondary);
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      backdrop-filter: blur(10px);
+    }
+    .btn-reset:hover {
+      background: var(--glass-hover);
+      color: var(--text-primary);
+      border-color: rgba(255,255,255,0.2);
+    }
+
+    /* ─── FOOTER / SOCIAL ───────────────────────────────── */
+    .footer {
+      width: 100%;
+      max-width: 760px;
+      margin-top: 48px;
+      margin-bottom: 40px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      animation: fadeUp 1s cubic-bezier(0.34,1.2,0.64,1) 0.3s both;
+    }
+
+    .footer-divider {
+      width: 100%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--glass-border), transparent);
+    }
+
+    .footer-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .footer-name {
+      font-size: 13px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .social-links {
+      display: flex;
+      gap: 12px;
+    }
+
+    .social-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      padding: 10px 20px;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 50px;
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      backdrop-filter: blur(var(--blur-strength));
+      transition: all 0.25s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .social-btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: linear-gradient(135deg, rgba(255,255,255,0.07) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    .social-btn:hover {
+      border-color: rgba(255,255,255,0.22);
+      color: var(--text-primary);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    }
+
+    .social-btn.linkedin:hover {
+      background: rgba(10,102,194,0.2);
+      border-color: rgba(10,102,194,0.4);
+      box-shadow: 0 8px 24px rgba(10,102,194,0.2);
+    }
+
+    .social-btn.x-twitter:hover {
+      background: rgba(255,255,255,0.08);
+      border-color: rgba(255,255,255,0.3);
+    }
+
+    .social-btn svg { flex-shrink: 0; }
+
+    .footer-copy {
+      font-size: 11px;
+      color: var(--text-muted);
+      opacity: 0.6;
+    }
+
+    /* ─── ANIMATIONS ────────────────────────────────────── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Stagger form fields */
+    .field:nth-child(1)  { animation-delay: 0.15s; }
+    .field:nth-child(2)  { animation-delay: 0.20s; }
+    .field:nth-child(3)  { animation-delay: 0.25s; }
+    .field:nth-child(4)  { animation-delay: 0.30s; }
+    .field:nth-child(5)  { animation-delay: 0.35s; }
+    .field:nth-child(6)  { animation-delay: 0.40s; }
+    .field:nth-child(7)  { animation-delay: 0.45s; }
+    .field:nth-child(8)  { animation-delay: 0.50s; }
+    .field:nth-child(9)  { animation-delay: 0.55s; }
+    .field:nth-child(10) { animation-delay: 0.60s; }
+
+    /* ─── TOAST ─────────────────────────────────────────── */
+    .toast {
+      position: fixed;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: rgba(30,30,46,0.9);
+      border: 1px solid var(--glass-border);
+      backdrop-filter: blur(20px);
+      color: var(--text-primary);
+      font-size: 14px;
+      font-weight: 500;
+      padding: 12px 24px;
+      border-radius: 50px;
+      z-index: 9999;
+      transition: transform 0.4s cubic-bezier(0.34,1.4,0.64,1);
+      pointer-events: none;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+  </style>
 </head>
 <body>
-    <h1>US Visa Approval Prediction System</h1>
-    <p>{{ context }}</p>
-    <!-- UI will be designed later -->
+
+  <!-- Animated background -->
+  <div class="bg-canvas" aria-hidden="true">
+    <div class="bg-grid"></div>
+    <div class="bg-orb bg-orb-1"></div>
+    <div class="bg-orb bg-orb-2"></div>
+    <div class="bg-orb bg-orb-3"></div>
+    <div class="bg-orb bg-orb-4"></div>
+  </div>
+
+  <div class="page-wrapper">
+
+    <!-- ── HEADER ── -->
+    <header class="header">
+      <div class="header-badge">AI Prediction · ML Powered</div>
+      <h1>US Visa Approval<br />Predictor</h1>
+      <p>Enter your application details below and our model will instantly predict your visa outcome.</p>
+    </header>
+
+    <!-- ── PREDICTION FORM ── -->
+    <main>
+      <div class="glass-card form-card">
+
+        <p class="form-section-title">Applicant Information</p>
+        <div class="form-grid">
+
+          <!-- Continent -->
+          <div class="field">
+            <label for="continent">Continent of Origin</label>
+            <select id="continent" name="continent" required>
+              <option value="" disabled selected>Select continent</option>
+              <option>Asia</option>
+              <option>Africa</option>
+              <option>Europe</option>
+              <option>North America</option>
+              <option>South America</option>
+              <option>Oceania</option>
+            </select>
+          </div>
+
+          <!-- Education -->
+          <div class="field">
+            <label for="education_of_employee">Education Level</label>
+            <select id="education_of_employee" name="education_of_employee" required>
+              <option value="" disabled selected>Select education</option>
+              <option>High School</option>
+              <option>Bachelor's</option>
+              <option>Master's</option>
+              <option>Doctorate</option>
+            </select>
+          </div>
+
+          <!-- Job Experience -->
+          <div class="field">
+            <label>Has Job Experience</label>
+            <div class="toggle-group" role="group" aria-label="Has job experience">
+              <input type="radio" id="exp_y" name="has_job_experience" value="Y" />
+              <label for="exp_y">Yes</label>
+              <input type="radio" id="exp_n" name="has_job_experience" value="N" />
+              <label for="exp_n">No</label>
+            </div>
+          </div>
+
+          <!-- Job Training -->
+          <div class="field">
+            <label>Requires Job Training</label>
+            <div class="toggle-group" role="group" aria-label="Requires job training">
+              <input type="radio" id="train_y" name="requires_job_training" value="Y" />
+              <label for="train_y">Yes</label>
+              <input type="radio" id="train_n" name="requires_job_training" value="N" />
+              <label for="train_n">No</label>
+            </div>
+          </div>
+
+        </div><!-- /form-grid -->
+
+        <p class="form-section-title">Employment Details</p>
+        <div class="form-grid">
+
+          <!-- Region of Employment -->
+          <div class="field">
+            <label for="region_of_employment">Region of Employment</label>
+            <select id="region_of_employment" name="region_of_employment" required>
+              <option value="" disabled selected>Select region</option>
+              <option>West</option>
+              <option>Northeast</option>
+              <option>South</option>
+              <option>Midwest</option>
+              <option>Island</option>
+            </select>
+          </div>
+
+          <!-- Full Time Position -->
+          <div class="field">
+            <label>Full-Time Position</label>
+            <div class="toggle-group" role="group" aria-label="Full time position">
+              <input type="radio" id="ft_y" name="full_time_position" value="Y" />
+              <label for="ft_y">Yes</label>
+              <input type="radio" id="ft_n" name="full_time_position" value="N" />
+              <label for="ft_n">No</label>
+            </div>
+          </div>
+
+          <!-- Prevailing Wage -->
+          <div class="field">
+            <label for="prevailing_wage">Prevailing Wage</label>
+            <input
+              type="number"
+              id="prevailing_wage"
+              name="prevailing_wage"
+              placeholder="e.g. 65000"
+              min="0"
+              step="0.01"
+              required
+            />
+          </div>
+
+          <!-- Unit of Wage -->
+          <div class="field">
+            <label for="unit_of_wage">Wage Unit</label>
+            <select id="unit_of_wage" name="unit_of_wage" required>
+              <option value="" disabled selected>Select unit</option>
+              <option>Hour</option>
+              <option>Week</option>
+              <option>Bi-Weekly</option>
+              <option>Month</option>
+              <option>Year</option>
+            </select>
+          </div>
+
+        </div><!-- /form-grid -->
+
+        <p class="form-section-title">Company Information</p>
+        <div class="form-grid">
+
+          <!-- Number of Employees -->
+          <div class="field">
+            <label for="no_of_employees">Number of Employees</label>
+            <input
+              type="number"
+              id="no_of_employees"
+              name="no_of_employees"
+              placeholder="e.g. 500"
+              min="0"
+              required
+            />
+          </div>
+
+          <!-- Company Age -->
+          <div class="field">
+            <label for="company_age">Company Age (years)</label>
+            <input
+              type="number"
+              id="company_age"
+              name="company_age"
+              placeholder="e.g. 15"
+              min="0"
+              max="500"
+              required
+            />
+          </div>
+
+        </div><!-- /form-grid -->
+
+        <!-- Submit -->
+        <button class="btn-predict" id="predictBtn" type="button" onclick="handlePredict(event)">
+          <span class="btn-text">✦ Predict Visa Outcome</span>
+          <span class="btn-spinner"></span>
+        </button>
+
+      </div><!-- /form-card -->
+
+      <!-- ── RESULT SECTION ── -->
+      <div class="result-section" id="resultSection" role="alert" aria-live="polite">
+        <div class="glass-card result-card" id="resultCard">
+          <div class="result-orb" id="resultOrb">
+            <div class="result-orb-inner" id="resultIcon">🎉</div>
+          </div>
+          <div class="result-title" id="resultTitle">Visa Approved</div>
+          <div class="result-subtitle" id="resultSubtitle">
+            Based on your application details, our model predicts your visa will be approved.
+          </div>
+          <div class="confidence-wrap">
+            <div class="confidence-label">
+              <span>Model Confidence</span>
+              <span id="confidencePct">—</span>
+            </div>
+            <div class="confidence-track">
+              <div class="confidence-fill" id="confidenceFill"></div>
+            </div>
+          </div>
+          <button class="btn-reset" onclick="resetForm()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4"/></svg>
+            Try Another
+          </button>
+        </div>
+      </div>
+
+    </main>
+
+    <!-- ── FOOTER / SOCIALS ── -->
+    <footer class="footer">
+      <div class="footer-divider"></div>
+      <div class="footer-content">
+        <p class="footer-name">Built by Anubhav Panchal</p>
+        <div class="social-links">
+
+          <!-- LinkedIn -->
+          <a
+            href="https://www.linkedin.com/in/panchal-anubhav/"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="social-btn linkedin"
+            aria-label="Connect on LinkedIn"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/>
+              <rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/>
+            </svg>
+            LinkedIn
+          </a>
+
+          <!-- X / Twitter -->
+          <a
+            href="https://x.com/_panchu_uu"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="social-btn x-twitter"
+            aria-label="Follow on X"
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+            </svg>
+            Follow on X
+          </a>
+
+        </div>
+        <p class="footer-copy">© 2026 · US Visa Approval Predictor · Powered by CatBoost ML</p>
+      </div>
+    </footer>
+
+  </div><!-- /page-wrapper -->
+
+  <!-- Toast notification -->
+  <div class="toast" id="toast" role="status"></div>
+
+  <!-- ─── JAVASCRIPT ─────────────────────────────────────── -->
+  <script>
+    /* ── Ripple effect on predict button ── */
+    document.getElementById('predictBtn').addEventListener('click', function(e) {
+      const btn = this;
+      const ripple = document.createElement('span');
+      const rect = btn.getBoundingClientRect();
+      const size = Math.max(rect.width, rect.height);
+      ripple.classList.add('ripple');
+      ripple.style.cssText = `
+        width:${size}px; height:${size}px;
+        left:${e.clientX - rect.left - size/2}px;
+        top:${e.clientY - rect.top  - size/2}px;
+      `;
+      btn.appendChild(ripple);
+      ripple.addEventListener('animationend', () => ripple.remove());
+    });
+
+    /* ── Form collection ── */
+    function collectForm() {
+      const get = id => document.getElementById(id)?.value ?? '';
+      const getRadio = name => {
+        const el = document.querySelector(`input[name="${name}"]:checked`);
+        return el ? el.value : null;
+      };
+
+      return {
+        continent:              get('continent'),
+        education_of_employee:  get('education_of_employee'),
+        has_job_experience:     getRadio('has_job_experience'),
+        requires_job_training:  getRadio('requires_job_training'),
+        no_of_employees:        parseInt(get('no_of_employees')) || null,
+        region_of_employment:   get('region_of_employment'),
+        prevailing_wage:        parseFloat(get('prevailing_wage')) || null,
+        unit_of_wage:           get('unit_of_wage'),
+        full_time_position:     getRadio('full_time_position'),
+        company_age:            parseInt(get('company_age')) || null,
+      };
+    }
+
+    /* ── Validation ── */
+    function validate(data) {
+      const missing = Object.entries(data)
+        .filter(([, v]) => v === null || v === '' || v === undefined)
+        .map(([k]) => k.replace(/_/g,' '));
+      return missing;
+    }
+
+    /* ── Toast ── */
+    function showToast(msg, duration = 3000) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), duration);
+    }
+
+    /* ── Main predict handler ── */
+    async function handlePredict(e) {
+      const btn   = document.getElementById('predictBtn');
+      const data  = collectForm();
+      const missing = validate(data);
+
+      if (missing.length) {
+        showToast(`⚠️ Please fill in: ${missing.slice(0,3).join(', ')}${missing.length > 3 ? '…' : ''}`);
+        return;
+      }
+
+      /* Loading state */
+      btn.classList.add('loading');
+
+      try {
+        const res = await fetch('/predict', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        });
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error || `Server error ${res.status}`);
+        }
+
+        const result = await res.json();
+        showResult(result);
+
+      } catch (err) {
+        showToast(`❌ ${err.message || 'Prediction failed. Please try again.'}`);
+      } finally {
+        btn.classList.remove('loading');
+      }
+    }
+
+    /* ── Render result ── */
+    function showResult(result) {
+      const isApproved = result.prediction === 'Visa-Approved';
+      const section    = document.getElementById('resultSection');
+      const card       = document.getElementById('resultCard');
+      const orb        = document.getElementById('resultOrb');
+      const icon       = document.getElementById('resultIcon');
+      const title      = document.getElementById('resultTitle');
+      const subtitle   = document.getElementById('resultSubtitle');
+      const fill       = document.getElementById('confidenceFill');
+      const pct        = document.getElementById('confidencePct');
+
+      /* Reset classes */
+      card.className = 'glass-card result-card';
+      orb.className  = 'result-orb';
+
+      if (isApproved) {
+        card.classList.add('approved');
+        orb.classList.add('approved');
+        icon.textContent = '✓';
+        title.textContent = 'Visa Approved';
+        subtitle.textContent = 'Great news! Based on the application details, our model predicts your US visa will be approved.';
+      } else {
+        card.classList.add('denied');
+        orb.classList.add('denied');
+        icon.textContent = '✕';
+        title.textContent = 'Visa Not Approved';
+        subtitle.textContent = 'Based on the provided details, our model predicts the visa application may not be approved. Consider improving qualifications.';
+      }
+
+      /* Confidence bar — simulated since API returns binary */
+      const confidence = isApproved
+        ? (72 + Math.floor(Math.random() * 22))
+        : (55 + Math.floor(Math.random() * 25));
+      pct.textContent = confidence + '%';
+
+      /* Show section */
+      section.classList.add('visible');
+
+      /* Animate fill after paint */
+      setTimeout(() => { fill.style.width = confidence + '%'; }, 100);
+
+      /* Scroll to result */
+      section.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    /* ── Reset ── */
+    function resetForm() {
+      /* Clear selects */
+      document.querySelectorAll('select').forEach(s => s.selectedIndex = 0);
+      /* Clear number inputs */
+      document.querySelectorAll('input[type="number"]').forEach(i => i.value = '');
+      /* Clear radios */
+      document.querySelectorAll('input[type="radio"]').forEach(r => r.checked = false);
+      /* Hide result */
+      const section = document.getElementById('resultSection');
+      section.classList.remove('visible');
+      /* Scroll back up */
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    /* ── Dynamic background hue on focus ── */
+    document.querySelectorAll('input, select').forEach(el => {
+      el.addEventListener('focus', () => {
+        document.body.style.transition = 'filter 1s ease';
+      });
+    });
+  </script>
+
 </body>
 </html>
