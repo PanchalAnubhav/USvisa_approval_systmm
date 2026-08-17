@@ -1,6 +1,7 @@
 import os
 import sys
 
+import pandas as pd
 from pandas import DataFrame
 from sklearn.model_selection import train_test_split
 
@@ -23,26 +24,38 @@ class DataIngestion:
     def export_data_into_feature_store(self)->DataFrame:
         """
         Method Name :   export_data_into_feature_store
-        Description :   This method exports data from mongodb to csv file
+        Description :   This method exports data from mongodb to csv file.
+                        If MongoDB is unreachable, falls back to reading the
+                        local raw dataset at notebook/EasyVisa.csv.
         
         Output      :   data is returned as artifact of data ingestion components
         On Failure  :   Write an exception log and then raise an exception
         """
+        LOCAL_FALLBACK_CSV = os.path.join("notebook", "EasyVisa.csv")
         try:
             logging.info(f"Exporting data from mongodb")
             usvisa_data = USvisaData()
             dataframe = usvisa_data.export_collection_as_dataframe(collection_name=
                                                                    self.data_ingestion_config.collection_name)
             logging.info(f"Shape of dataframe: {dataframe.shape}")
-            feature_store_file_path  = self.data_ingestion_config.feature_store_file_path
-            dir_path = os.path.dirname(feature_store_file_path)
-            os.makedirs(dir_path,exist_ok=True)
-            logging.info(f"Saving exported data into feature store file path: {feature_store_file_path}")
-            dataframe.to_csv(feature_store_file_path,index=False,header=True)
-            return dataframe
+        except Exception as mongo_err:
+            logging.warning(
+                f"MongoDB export failed: {mongo_err}\n"
+                f"Falling back to local CSV: {LOCAL_FALLBACK_CSV}"
+            )
+            if not os.path.exists(LOCAL_FALLBACK_CSV):
+                raise FileNotFoundError(
+                    f"MongoDB unavailable AND local fallback not found: {LOCAL_FALLBACK_CSV}"
+                )
+            dataframe = pd.read_csv(LOCAL_FALLBACK_CSV)
+            logging.info(f"Loaded fallback CSV. Shape: {dataframe.shape}")
 
-        except Exception as e:
-            raise USvisaException(e,sys)
+        feature_store_file_path  = self.data_ingestion_config.feature_store_file_path
+        dir_path = os.path.dirname(feature_store_file_path)
+        os.makedirs(dir_path,exist_ok=True)
+        logging.info(f"Saving exported data into feature store file path: {feature_store_file_path}")
+        dataframe.to_csv(feature_store_file_path,index=False,header=True)
+        return dataframe
 
     def split_data_as_train_test(self,dataframe: DataFrame) ->None:
         """
