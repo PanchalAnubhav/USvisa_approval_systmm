@@ -1,4 +1,7 @@
 import os
+import threading
+import traceback
+from datetime import datetime, timezone
 from typing import Optional
 
 from fastapi import FastAPI, Request
@@ -10,6 +13,7 @@ from uvicorn import run as app_run
 
 from us_visa.constants import APP_HOST, APP_PORT
 from us_visa.pipeline.prediction_pipeline import USvisaData, USvisaClassifier
+from us_visa.pipeline.training_pipeline import TrainPipeline
 
 
 app = FastAPI(
@@ -30,6 +34,42 @@ def render_html() -> HTMLResponse:
     """Read and return the main HTML template as a direct HTMLResponse."""
     with open(TEMPLATE_PATH, encoding="utf-8") as f:
         return HTMLResponse(content=f.read())
+
+
+# ---------------------------------------------------------------------
+# RETRAIN STATE
+# ---------------------------------------------------------------------
+
+_retrain_state = {
+    "status": "idle",          # idle | running | success | failed
+    "started_at": None,
+    "finished_at": None,
+    "message": "No retraining has been triggered yet.",
+}
+_retrain_lock = threading.Lock()
+
+
+def _run_training():
+    """Execute the full training pipeline in a background thread."""
+    global _retrain_state
+    try:
+        pipeline = TrainPipeline()
+        pipeline.run_pipeline()
+        with _retrain_lock:
+            _retrain_state.update({
+                "status": "success",
+                "finished_at": datetime.now(timezone.utc).isoformat(),
+                "message": "Pipeline completed successfully. Model updated.",
+            })
+        # Invalidate cached model so next prediction loads the fresh one
+        USvisaClassifier._model = None
+    except Exception as e:
+        with _retrain_lock:
+            _retrain_state.update({
+                "status": "failed",
+                "finished_at": datetime.now(timezone.utc).isoformat(),
+                "message": f"Pipeline failed: {traceback.format_exc()}",
+            })
 
 
 # For production, replace "*" with your actual frontend/domain.
@@ -150,10 +190,58 @@ def predict_application(data: VisaApplication):
     tags=["system"],
 )
 async def health_check():
+    return {"status": "ok"}
 
-    return {
-        "status": "ok"
-    }
+
+# ---------------------------------------------------------------------
+# RETRAIN ENDPOINTS
+# ---------------------------------------------------------------------
+
+@app.post(
+    "/retrain",
+    tags=["pipeline"],
+    summary="Trigger model retraining in the background",
+)
+async def retrain():
+    """Start the full training pipeline in a background thread.
+    Returns 202 immediately; poll /retrain/status for progress."""
+    with _retrain_lock:
+        if _retrain_state["status"] == "running":
+            return JSONResponse(
+                status_code=409,
+                content={
+                    "status": "running",
+                    "message": "A retraining job is already in progress.",
+                },
+            )
+        _retrain_state.update({
+            "status": "running",
+            "started_at": datetime.now(timezone.utc).isoformat(),
+            "finished_at": None,
+            "message": "Pipeline started. This may take 2–5 minutes.",
+        })
+
+    thread = threading.Thread(target=_run_training, daemon=True)
+    thread.start()
+
+    return JSONResponse(
+        status_code=202,
+        content={
+            "status": "running",
+            "message": "Retraining started in background. Poll /retrain/status for updates.",
+        },
+    )
+
+
+@app.get(
+    "/retrain/status",
+    tags=["pipeline"],
+    summary="Get the current status of the retraining job",
+)
+async def retrain_status():
+    """Returns the current state of the training pipeline."""
+    with _retrain_lock:
+        return dict(_retrain_state)
 
 
 # ---------------------------------------------------------------------
