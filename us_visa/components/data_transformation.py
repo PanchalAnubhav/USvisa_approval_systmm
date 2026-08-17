@@ -134,8 +134,8 @@ class DataTransformation:
             if "yr_of_estab" in train_df.columns:
                 train_df["company_age"] = CURRENT_YEAR - train_df["yr_of_estab"]
                 test_df["company_age"] = CURRENT_YEAR - test_df["yr_of_estab"]
-                train_df.drop("yr_of_estab", inplace=True)
-                test_df.drop("yr_of_estab", inplace=True)
+                train_df.drop(columns=["yr_of_estab"], inplace=True)
+                test_df.drop(columns=["yr_of_estab"], inplace=True)
 
             logging.info("Feature engineering complete: dropped case_id, created company_age, dropped yr_of_estab")
 
