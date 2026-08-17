@@ -707,7 +707,16 @@
 
     <!-- ── HEADER ── -->
     <header class="header">
-      <div class="header-badge">AI Prediction · ML Powered</div>
+      <div class="header-badge-row" style="display:flex; justify-content:center; align-items:center; gap:12px; margin-bottom:20px; flex-wrap:wrap;">
+        <div class="header-badge" style="margin-bottom:0;">AI Prediction · ML Powered</div>
+        <button id="retrainBtn" class="social-btn" onclick="handleRetrain()" style="cursor:pointer; padding:6px 16px; font-size:12px; border-radius:50px; background:rgba(124,111,255,0.15); border:1px solid rgba(124,111,255,0.35); color:#fff; display:inline-flex; align-items:center; gap:6px;">
+          <span id="retrainIcon">⚡</span>
+          <span id="retrainText">Retrain Model</span>
+        </button>
+      </div>
+      <div id="retrainStatusBanner" style="display:none; max-width:500px; margin:0 auto 20px; padding:10px 18px; border-radius:14px; font-size:13px; font-weight:500; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.15); backdrop-filter:blur(16px);">
+        <span id="retrainStatusMsg">Pipeline ready</span>
+      </div>
       <h1>US Visa Approval<br />Predictor</h1>
       <p>Enter your application details below and our model will instantly predict your visa outcome.</p>
     </header>
@@ -1092,11 +1101,99 @@
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    /* ── Dynamic background hue on focus ── */
-    document.querySelectorAll('input, select').forEach(el => {
-      el.addEventListener('focus', () => {
-        document.body.style.transition = 'filter 1s ease';
-      });
+    /* ── Retrain Handler & Status Poller ── */
+    let retrainPollInterval = null;
+
+    async function handleRetrain() {
+      const btn = document.getElementById('retrainBtn');
+      const text = document.getElementById('retrainText');
+      const icon = document.getElementById('retrainIcon');
+      const banner = document.getElementById('retrainStatusBanner');
+      const msg = document.getElementById('retrainStatusMsg');
+
+      try {
+        btn.style.pointerEvents = 'none';
+        btn.style.opacity = '0.7';
+        icon.textContent = '⏳';
+        text.textContent = 'Starting Pipeline...';
+        showToast('Initiating model training pipeline in background...');
+
+        const res = await fetch('/retrain', { method: 'POST' });
+        const data = await res.json();
+
+        banner.style.display = 'block';
+        msg.innerHTML = `⚙️ <strong>Training in progress:</strong> Pipeline is executing (Ingestion → Validation → Transformation → Training → Evaluation → Pusher).`;
+
+        startPollingRetrainStatus();
+      } catch (err) {
+        showToast(`❌ Failed to start retraining: ${err.message}`);
+        btn.style.pointerEvents = 'auto';
+        btn.style.opacity = '1';
+        icon.textContent = '⚡';
+        text.textContent = 'Retrain Model';
+      }
+    }
+
+    function startPollingRetrainStatus() {
+      if (retrainPollInterval) clearInterval(retrainPollInterval);
+
+      retrainPollInterval = setInterval(async () => {
+        try {
+          const res = await fetch('/retrain/status');
+          const data = await res.json();
+          const btn = document.getElementById('retrainBtn');
+          const text = document.getElementById('retrainText');
+          const icon = document.getElementById('retrainIcon');
+          const banner = document.getElementById('retrainStatusBanner');
+          const msg = document.getElementById('retrainStatusMsg');
+
+          if (data.status === 'running') {
+            btn.style.pointerEvents = 'none';
+            btn.style.opacity = '0.7';
+            icon.textContent = '🔄';
+            text.textContent = 'Training...';
+            banner.style.display = 'block';
+            banner.style.borderColor = 'rgba(124,111,255,0.4)';
+            msg.innerHTML = `🔄 <strong>Training in progress...</strong> Model pipeline running in background.`;
+          } else if (data.status === 'success') {
+            clearInterval(retrainPollInterval);
+            retrainPollInterval = null;
+            btn.style.pointerEvents = 'auto';
+            btn.style.opacity = '1';
+            icon.textContent = '✅';
+            text.textContent = 'Retrain Model';
+            banner.style.display = 'block';
+            banner.style.borderColor = 'rgba(48,209,88,0.4)';
+            msg.innerHTML = `✅ <strong>Training Completed!</strong> New production model loaded.`;
+            showToast('🎉 Training pipeline completed! Model successfully updated.');
+          } else if (data.status === 'failed') {
+            clearInterval(retrainPollInterval);
+            retrainPollInterval = null;
+            btn.style.pointerEvents = 'auto';
+            btn.style.opacity = '1';
+            icon.textContent = '⚠️';
+            text.textContent = 'Retrain Model';
+            banner.style.display = 'block';
+            banner.style.borderColor = 'rgba(255,69,58,0.4)';
+            msg.innerHTML = `⚠️ <strong>Training Failed:</strong> ${data.message || 'Error occurred during pipeline run.'}`;
+            showToast('❌ Training pipeline failed. Check server logs.');
+          }
+        } catch (err) {
+          console.error('Error polling retrain status:', err);
+        }
+      }, 3000);
+    }
+
+    // Check status on page load in case a pipeline is already running
+    window.addEventListener('DOMContentLoaded', () => {
+      fetch('/retrain/status')
+        .then(res => res.json())
+        .then(data => {
+          if (data.status === 'running') {
+            startPollingRetrainStatus();
+          }
+        })
+        .catch(() => {});
     });
   </script>
 
