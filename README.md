@@ -59,39 +59,17 @@ This project predicts whether a US visa application will be **approved or denied
 
 ## 🏗️ Architecture
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                        USER / RECRUITER                         │
-└───────────────────────────┬─────────────────────────────────────┘
-                            │ HTTPS
-                            ▼
-┌─────────────────────────────────────────────────────────────────┐
-│              FastAPI Application  (app.py)                      │
-│                                                                  │
-│   GET  /          → Glassmorphism Web UI (usvisa.html)          │
-│   POST /predict   → JSON Prediction API                         │
-│   POST /retrain   → Trigger background training pipeline        │
-│   GET  /retrain/status → Poll training progress                 │
-│   GET  /health    → Health check                                │
-└──────────┬──────────────────────────────┬────────────────────────┘
-           │ predict()                    │ retrain()
-           ▼                              ▼
-┌─────────────────────┐       ┌──────────────────────────────────┐
-│  Prediction Pipeline │       │      Training Pipeline           │
-│                     │       │                                  │
-│  USvisaData         │       │  DataIngestion (MongoDB/CSV)     │
-│  → DataFrame        │       │  → DataValidation (drift check)  │
-│  → Preprocessor     │       │  → DataTransformation (SMOTE)    │
-│  → Model.pkl        │       │  → ModelTrainer (4 classifiers)  │
-│  → Prediction       │       │  → ModelEvaluation (vs prod)     │
-└─────────────────────┘       │  → ModelPusher (to final_model/) │
-                              └──────────────────────────────────┘
-                                           │
-                              ┌────────────▼──────────┐
-                              │    MongoDB Atlas       │
-                              │  (raw dataset store)  │
-                              └───────────────────────┘
-```
+![Architecture Diagram](static/docs/architecture.jpg)
+
+---
+
+## 📸 Screenshots
+
+<div align="center">
+<img src="static/docs/ui_screenshot.jpg" width="400" alt="US Visa Approval Predictor UI" />
+</div>
+
+> The prediction form (left) and result card (right) — built with a glassmorphism design system.
 
 ---
 
@@ -363,6 +341,30 @@ Poll training progress.
 | `AWS_REGION` | ⚠️ Optional | AWS region (e.g. `us-east-1`) |
 | `APP_HOST` | ✅ | Server host (default `0.0.0.0`) |
 | `APP_PORT` | ✅ | Server port (default `8080`) |
+
+---
+
+## 💼 LinkedIn Project Description
+
+> Copy-paste this directly into your LinkedIn **Projects** section:
+
+---
+
+**US Visa Approval Predictor** | *Machine Learning · MLOps · FastAPI · Docker*
+
+🔗 **Live Demo:** https://usvisa-demo.onrender.com
+
+Built a production-grade end-to-end MLOps system that predicts US visa approval outcomes using machine learning. The project goes beyond a simple notebook — it implements a full 6-stage automated pipeline covering data ingestion, validation, transformation, model training, evaluation, and deployment.
+
+**Key highlights:**
+- Designed and implemented a 6-stage ML pipeline (Data Ingestion → Validation → Transformation → Training → Evaluation → Deployment) with modular, testable components
+- Trained and compared 4 classifiers (CatBoost, XGBoost, Random Forest, KNN); CatBoost selected as production model with **71.9% accuracy and F1=0.617**
+- Applied **SMOTE oversampling** to handle class imbalance and **Evidently AI** for data drift detection
+- Built a **FastAPI REST API** with async background retraining, model gating (new model only promoted if better), and a glassmorphism web UI
+- Containerised with **Docker** and deployed to Render.com (free-tier, always-on demo link) with a separate **AWS ECR/ECS-ready branch** via GitHub Actions CI/CD
+- Data stored in **MongoDB Atlas**; model artifacts serialised with `dill` and versioned per training run
+
+**Tech:** Python · CatBoost · XGBoost · scikit-learn · FastAPI · Docker · MongoDB · AWS ECR · GitHub Actions · Render.com
 
 ---
 
