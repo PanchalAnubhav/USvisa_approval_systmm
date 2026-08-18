@@ -1,146 +1,384 @@
-# US Visa Approval Prediction System
+<div align="center">
 
-An end-to-end MLOps production-ready machine learning project that predicts whether a US visa application will be **Certified** or **Denied** based on applicant and employer features.
+# 🇺🇸 US Visa Approval Predictor
 
-## Architecture
+**AI-powered visa approval prediction system — built end-to-end with a production MLOps pipeline**
 
-```
-┌─────────────┐    ┌──────────────┐    ┌───────────────────┐    ┌──────────────┐
-│  MongoDB     │───▶│ Data         │───▶│ Data              │───▶│ Data         │
-│  (Raw Data)  │    │ Ingestion    │    │ Validation        │    │ Transform    │
-└─────────────┘    └──────────────┘    └───────────────────┘    └──────┬───────┘
-                                                                       │
-┌─────────────┐    ┌──────────────┐    ┌───────────────────┐          │
-│  AWS S3     │◀───│ Model        │◀───│ Model             │◀─────────┘
-│  (Registry) │    │ Pusher       │    │ Trainer            │
-└─────────────┘    └──────────────┘    └───────────────────┘
-       │
-       ▼
-┌─────────────────────────────────┐
-│  FastAPI Prediction Service     │
-│  /predict  /train  /health      │
-└─────────────────────────────────┘
-```
+[![Live Demo](https://img.shields.io/badge/🚀_Live_Demo-usvisa--demo.onrender.com-4f9eff?style=for-the-badge)](https://usvisa-demo.onrender.com)
+[![Python](https://img.shields.io/badge/Python-3.11-3776ab?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![Docker](https://img.shields.io/badge/Docker-Ready-2496ed?style=for-the-badge&logo=docker&logoColor=white)](https://docker.com)
+[![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-47a248?style=for-the-badge&logo=mongodb&logoColor=white)](https://mongodb.com)
+[![AWS](https://img.shields.io/badge/AWS-ECR_Ready-ff9900?style=for-the-badge&logo=amazonaws&logoColor=white)](https://aws.amazon.com)
 
-## ML Pipeline
+</div>
 
-| Stage | Description |
-|-------|-------------|
-| **Data Ingestion** | Exports data from MongoDB, splits into train/test |
-| **Data Validation** | Schema validation + KS-test drift detection |
-| **Data Transformation** | Feature engineering (company_age), encoding (OHE/Ordinal), scaling (StandardScaler/PowerTransformer), SMOTE resampling |
-| **Model Training** | Trains XGBoost, RandomForest, KNN, CatBoost with tuned hyperparams; selects best by F1 |
-| **Model Evaluation** | Compares new model against S3 production model |
-| **Model Pusher** | Pushes accepted model to AWS S3 registry |
+---
 
-### Best Model (from notebook)
-- **CatBoostClassifier** — Accuracy: 73.3%, F1: 0.575
-- Hyperparameters: `learning_rate=0.1, l2_leaf_reg=3, iterations=300, depth=10`
+## 🔗 Live Demo
 
-## Quick Start
+> **Try it now →** [https://usvisa-demo.onrender.com](https://usvisa-demo.onrender.com)
 
-### Prerequisites
-- Python 3.10+
-- MongoDB Atlas account
-- AWS account (for S3 model registry)
+Fill in the applicant's details and get an instant AI-powered visa approval prediction.
 
-### Setup
+> ⚠️ **First load may take ~30 seconds** — the free-tier server wakes up on demand.
 
-```bash
-# Clone and enter project
-git clone <your-repo-url>
-cd USvisa_approval_systmm
+---
 
-# Create virtual environment
-conda create -n visa python=3.10 -y
-conda activate visa
+## 📋 Table of Contents
 
-# Install dependencies
-pip install -r requirements.txt
+- [Overview](#-overview)
+- [Architecture](#-architecture)
+- [ML Pipeline](#-ml-pipeline)
+- [Model Performance](#-model-performance)
+- [Tech Stack](#-tech-stack)
+- [Project Structure](#-project-structure)
+- [Features](#-features)
+- [Getting Started](#-getting-started)
+- [Docker](#-docker)
+- [Deployment Branches](#-deployment-branches)
+- [API Reference](#-api-reference)
+- [Environment Variables](#-environment-variables)
 
-# Set environment variables
-cp .env.example .env
-# Edit .env with your MongoDB URL and AWS credentials
-```
+---
 
-### Environment Variables
+## 🧠 Overview
 
-```bash
-export MONGODB_URL="mongodb+srv://<username>:<password>@..."
-export AWS_ACCESS_KEY_ID=<your_key>
-export AWS_SECRET_ACCESS_KEY=<your_secret>
-```
+This project predicts whether a US visa application will be **approved or denied** based on applicant and employer details. It is built as a **full-stack MLOps system** — not just a trained model, but a complete pipeline that:
 
-### Run
+- Ingests data from **MongoDB Atlas**
+- Validates data for **schema drift**
+- Transforms features with **SMOTE oversampling** to handle class imbalance
+- Trains **4 classifiers** and selects the best by F1 score
+- Evaluates against the production model before deploying
+- Serves predictions via a **FastAPI REST API**
+- Renders a **modern glassmorphism UI**
+- Supports **background model retraining** via a dedicated endpoint
 
-```bash
-# Start the API server
-uvicorn app:app --host 0.0.0.0 --port 8080 --reload
+---
 
-# Or use Makefile
-make run
+## 🏗️ Architecture
 
-# Trigger training pipeline
-curl http://localhost:8080/train
+![Architecture Diagram](static/docs/architecture.jpg)
 
-# Health check
-curl http://localhost:8080/health
-```
+---
 
-### Docker
+## 📸 Screenshots
 
-```bash
-# Build
-docker build -t usvisa-app -f DockerFile .
+<div align="center">
+<img src="static/docs/ui_screenshot.jpg" width="400" alt="US Visa Approval Predictor UI" />
+</div>
 
-# Run
-docker-compose up -d
-```
+> The prediction form (left) and result card (right) — built with a glassmorphism design system.
 
-## Project Structure
+---
+
+## 🔬 ML Pipeline
+
+The training pipeline consists of **6 sequential stages**:
+
+| Stage | Component | What it does |
+|-------|-----------|--------------|
+| 1️⃣ | **Data Ingestion** | Fetches the EasyVisa dataset from MongoDB Atlas; falls back to local CSV if offline |
+| 2️⃣ | **Data Validation** | Checks schema, column types, and runs an Evidently data drift report |
+| 3️⃣ | **Data Transformation** | Encodes categoricals, scales numerics, applies **SMOTE** to fix class imbalance |
+| 4️⃣ | **Model Trainer** | Trains RandomForest, KNN, XGBoost, and CatBoost; selects best by **F1 score** |
+| 5️⃣ | **Model Evaluation** | Compares the new model against the production model — only promotes if better |
+| 6️⃣ | **Model Pusher** | Saves accepted model to `final_model/` and optionally pushes to **AWS S3** |
+
+---
+
+## 📊 Model Performance
+
+> Results from the last full training run (`2026-08-17`):
+
+| Model | Test Accuracy | Test F1 | Precision | Recall |
+|-------|:---:|:---:|:---:|:---:|
+| Random Forest | 70.25% | 0.587 | 0.565 | 0.610 |
+| KNN | 66.74% | 0.552 | 0.517 | 0.592 |
+| XGBoost | 71.09% | 0.605 | 0.574 | 0.640 |
+| **CatBoost ✅ (selected)** | **71.94%** | **0.617** | **0.584** | **0.653** |
+
+**CatBoostClassifier** was selected as the production model with hyperparameters:
+- `learning_rate=0.1`, `depth=10`, `iterations=300`, `l2_leaf_reg=3`
+
+> The model is saved to `final_model/model.pkl` with the preprocessing pipeline bundled (`final_model/preprocessor.pkl`) into a single `USvisaModel` object using `dill` serialisation.
+
+---
+
+## 🛠️ Tech Stack
+
+### Machine Learning
+- **CatBoost** — production model (gradient boosting)
+- **XGBoost, RandomForest, KNN** — challenger models
+- **scikit-learn** — preprocessing, metrics, SMOTE
+- **imbalanced-learn** — SMOTE oversampling
+- **Evidently AI** — data drift detection
+
+### Backend
+- **FastAPI** — async REST API
+- **Uvicorn** — ASGI server
+- **Pydantic** — data validation & schema
+- **dill** — serialisation for complex Python objects
+
+### Data
+- **MongoDB Atlas** — cloud dataset store
+- **pymongo** — MongoDB driver
+- **pandas / numpy** — data processing
+
+### Infrastructure
+- **Docker** — containerisation
+- **Render.com** — free-forever cloud deployment
+- **AWS ECR + ECS** — production-grade deployment (branch: `aws-deploy`)
+- **GitHub Actions** — CI/CD pipeline
+
+### Frontend
+- Vanilla HTML/CSS/JavaScript
+- Glassmorphism design system
+- Async fetch API for real-time predictions
+
+---
+
+## 📁 Project Structure
 
 ```
 USvisa_approval_systmm/
-├── app.py                      # FastAPI application
-├── config/
-│   ├── model.yaml              # Model hyperparameter configs
-│   └── schema.yaml             # Data schema & feature groups
-├── us_visa/
-│   ├── cloud_storage/          # AWS S3 operations
-│   ├── components/             # ML pipeline components
+│
+├── app.py                          # FastAPI application (routes, retrain, predict)
+├── Dockerfile                      # Production Docker image
+├── docker-compose.yml              # Local orchestration
+├── render.yaml                     # Render.com deployment config (free-cloud branch)
+├── requirements.txt                # Production dependencies
+├── requirements-dev.txt            # Dev + test dependencies
+├── Makefile                        # Helper commands
+├── setup.py                        # Package config
+│
+├── us_visa/                        # Core Python package
+│   ├── components/                 # Pipeline stage implementations
 │   │   ├── data_ingestion.py
 │   │   ├── data_validation.py
 │   │   ├── data_transformation.py
 │   │   ├── model_trainer.py
 │   │   ├── model_evaluation.py
 │   │   └── model_pusher.py
-│   ├── configuration/          # MongoDB & AWS connections
-│   ├── constants/              # Project-wide constants
-│   ├── data_access/            # MongoDB data access layer
-│   ├── entity/                 # Data classes (configs, artifacts, estimators)
-│   ├── exception/              # Custom exception handling
-│   ├── logger/                 # Logging configuration
-│   ├── pipeline/               # Training & prediction pipelines
-│   └── utils/                  # Utility functions
-├── tests/                      # Unit & integration tests
-├── notebook/                   # EDA & model training notebooks
-├── DockerFile                  # Container configuration
-├── docker-compose.yml          # Local orchestration
-├── Makefile                    # Development commands
-├── requirements.txt            # Python dependencies
-└── .github/workflows/aws.yaml # CI/CD pipeline
+│   │
+│   ├── pipeline/
+│   │   ├── training_pipeline.py    # Orchestrates all 6 stages
+│   │   └── prediction_pipeline.py  # USvisaClassifier for inference
+│   │
+│   ├── entity/
+│   │   ├── config_entity.py        # Typed config dataclasses
+│   │   ├── artifact_entity.py      # Typed artifact dataclasses
+│   │   └── estimator.py            # USvisaModel wrapper
+│   │
+│   ├── cloud_storage/
+│   │   └── aws_storage.py          # S3 upload/download helpers
+│   │
+│   ├── data_access/
+│   │   └── usvisa_data.py          # MongoDB data access layer
+│   │
+│   ├── constants/                  # App-wide constants & config paths
+│   ├── logger/                     # Structured logging
+│   ├── exception/                  # Custom exception with traceback
+│   └── utils/                      # Shared utilities (load/save object, YAML)
+│
+├── templates/
+│   └── usvisa.html                 # Glassmorphism prediction UI
+├── static/                         # CSS, JS, icons
+├── config/                         # schema.yaml, model.yaml
+├── notebook/                       # EDA & model selection notebooks
+├── tests/                          # Unit tests
+├── final_model/                    # Production model artifacts
+└── .github/workflows/aws.yaml      # GitHub Actions CI/CD
 ```
 
-## Workflow
+---
 
-1. `constants` → 2. `entity` → 3. `components` → 4. `pipeline` → 5. `app.py`
+## ✨ Features
 
-## CI/CD
+- ✅ **End-to-end MLOps pipeline** — data ingestion → validation → transformation → training → evaluation → deployment
+- ✅ **Automatic model selection** — trains 4 classifiers, selects the best by F1 score
+- ✅ **Model gating** — new model only promoted to production if it outperforms the current one
+- ✅ **Background retraining** — trigger pipeline via API; poll status without blocking the UI
+- ✅ **Data drift detection** — Evidently AI reports on each training run
+- ✅ **SMOTE** — handles class imbalance without discarding data
+- ✅ **Docker-first** — single `Dockerfile` runs locally and in cloud
+- ✅ **Health check endpoint** — Render and ECS both use `/health`
+- ✅ **Premium UI** — glassmorphism design, animated result card, toast notifications
+- ✅ **AWS-ready** — separate `aws-deploy` branch with ECR push workflow
 
-GitHub Actions workflow (`.github/workflows/aws.yaml`):
-1. **CI**: Install deps → Run tests → Build Docker image → Push to ECR
-2. **CD**: Pull image on EC2 → Stop old container → Start new container
+---
 
-## License
+## 🚀 Getting Started
 
-MIT License
+### Prerequisites
+- Python 3.11+
+- MongoDB Atlas URI (or use the local CSV fallback)
+- AWS credentials (optional — only needed for S3/ECR features)
+
+### 1. Clone the repo
+
+```bash
+git clone https://github.com/PanchalAnubhav/USvisa_approval_systmm.git
+cd USvisa_approval_systmm
+git checkout free-cloud   # demo branch
+```
+
+### 2. Install dependencies
+
+```bash
+pip install -r requirements-dev.txt
+```
+
+### 3. Set up environment variables
+
+```bash
+cp .env.example .env
+# Edit .env and fill in MONGODB_URL, AWS credentials, etc.
+```
+
+### 4. Run locally
+
+```bash
+uvicorn app:app --host 0.0.0.0 --port 8080 --reload
+```
+
+Open [http://localhost:8080](http://localhost:8080)
+
+---
+
+## 🐳 Docker
+
+### Build and run
+
+```bash
+docker build -t usvisa-app -f Dockerfile .
+docker compose up -d
+```
+
+### Verify
+
+```bash
+curl http://localhost:8080/health
+# → {"status": "ok"}
+```
+
+---
+
+## 🌿 Deployment Branches
+
+| Branch | Purpose | URL |
+|--------|---------|-----|
+| `main` | Source of truth / development | — |
+| `free-cloud` | **Live demo on Render.com (no credit card)** | [usvisa-demo.onrender.com](https://usvisa-demo.onrender.com) |
+| `aws-deploy` | AWS ECR + ECS via GitHub Actions | Triggered by CI push |
+
+> The `free-cloud` and `aws-deploy` branches are **intentionally kept isolated** — changes to one never affect the other.
+
+---
+
+## 📡 API Reference
+
+### `GET /health`
+Returns service health status.
+```json
+{"status": "ok"}
+```
+
+### `POST /predict`
+Predict visa approval outcome.
+
+**Request body:**
+```json
+{
+  "continent": "Asia",
+  "education_of_employee": "Master's",
+  "has_job_experience": "Y",
+  "requires_job_training": "N",
+  "no_of_employees": 5000,
+  "region_of_employment": "South",
+  "prevailing_wage": 80000,
+  "unit_of_wage": "Year",
+  "full_time_position": "Y",
+  "company_age": 20
+}
+```
+
+**Response:**
+```json
+{
+  "status": true,
+  "prediction": "Visa-Approved",
+  "prediction_value": 1
+}
+```
+
+### `POST /retrain`
+Triggers the full 6-stage training pipeline in the background. Returns `202 Accepted` immediately.
+
+### `GET /retrain/status`
+Poll training progress.
+```json
+{
+  "status": "running",
+  "started_at": "2026-08-17T18:00:00Z",
+  "finished_at": null,
+  "message": "Pipeline started. This may take 2–5 minutes."
+}
+```
+
+---
+
+## 🔐 Environment Variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `MONGODB_URL` | ✅ | MongoDB Atlas connection string |
+| `DATABASE_NAME` | ✅ | MongoDB database name |
+| `COLLECTION_NAME` | ✅ | MongoDB collection name |
+| `AWS_ACCESS_KEY_ID` | ⚠️ Optional | For S3 model push & ECR |
+| `AWS_SECRET_ACCESS_KEY` | ⚠️ Optional | For S3 model push & ECR |
+| `AWS_REGION` | ⚠️ Optional | AWS region (e.g. `us-east-1`) |
+| `APP_HOST` | ✅ | Server host (default `0.0.0.0`) |
+| `APP_PORT` | ✅ | Server port (default `8080`) |
+
+---
+
+## 💼 LinkedIn Project Description
+
+> Copy-paste this directly into your LinkedIn **Projects** section:
+
+---
+
+**US Visa Approval Predictor** | *Machine Learning · MLOps · FastAPI · Docker*
+
+🔗 **Live Demo:** https://usvisa-demo.onrender.com
+
+Built a production-grade end-to-end MLOps system that predicts US visa approval outcomes using machine learning. The project goes beyond a simple notebook — it implements a full 6-stage automated pipeline covering data ingestion, validation, transformation, model training, evaluation, and deployment.
+
+**Key highlights:**
+- Designed and implemented a 6-stage ML pipeline (Data Ingestion → Validation → Transformation → Training → Evaluation → Deployment) with modular, testable components
+- Trained and compared 4 classifiers (CatBoost, XGBoost, Random Forest, KNN); CatBoost selected as production model with **71.9% accuracy and F1=0.617**
+- Applied **SMOTE oversampling** to handle class imbalance and **Evidently AI** for data drift detection
+- Built a **FastAPI REST API** with async background retraining, model gating (new model only promoted if better), and a glassmorphism web UI
+- Containerised with **Docker** and deployed to Render.com (free-tier, always-on demo link) with a separate **AWS ECR/ECS-ready branch** via GitHub Actions CI/CD
+- Data stored in **MongoDB Atlas**; model artifacts serialised with `dill` and versioned per training run
+
+**Tech:** Python · CatBoost · XGBoost · scikit-learn · FastAPI · Docker · MongoDB · AWS ECR · GitHub Actions · Render.com
+
+---
+
+## 👤 Author
+
+**Anubhav Panchal**
+
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-0a66c2?style=flat&logo=linkedin)](https://linkedin.com/in/your-profile)
+[![GitHub](https://img.shields.io/badge/GitHub-Follow-181717?style=flat&logo=github)](https://github.com/PanchalAnubhav)
+
+---
+
+<div align="center">
+
+Made with ❤️ | [Live Demo →](https://usvisa-demo.onrender.com)
+
+</div>
