@@ -329,7 +329,16 @@ async def predict_route(request: Request):
 
         result = predict_application(data)
 
-        return render_html()
+        # Return result as JSON so the page JS can render it.
+        # (The template uses fetch('/predict') directly, but this
+        #  route serves as the server-side form fallback.)
+        return JSONResponse(
+            status_code=200,
+            content={
+                "status": True,
+                **result,
+            },
+        )
 
     except Exception as e:
 

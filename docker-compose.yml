@@ -4,12 +4,15 @@ services:
   usvisa-app:
     build:
       context: .
-      dockerfile: DockerFile
+      dockerfile: Dockerfile
     container_name: usvisa-app
     ports:
       - "8080:8080"
+    env_file:
+      - .env
     environment:
-      - PORT=8080
+      - APP_HOST=0.0.0.0
+      - APP_PORT=8080
     volumes:
       - ./final_model:/app/final_model
       - ./artifact:/app/artifact

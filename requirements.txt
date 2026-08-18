@@ -29,10 +29,5 @@ python-multipart
 # Utilities
 from_root
 
-# Testing
-pytest
-pytest-cov
-httpx
-
 # Project
 -e .

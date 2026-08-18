@@ -21,3 +21,4 @@ docker-run:
 clean:
 	rm -rf artifact/ logs/ final_model/ __pycache__/ .pytest_cache/ us_visa.egg-info/
 	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
+	
