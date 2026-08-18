@@ -10,6 +10,4 @@ services:
       - key: APP_PORT
         value: "8080"
     healthCheckPath: /health
-    healthCheckTimeoutSeconds: 2
-    healthCheckGracePeriodSeconds: 5
     autoDeploy: true
