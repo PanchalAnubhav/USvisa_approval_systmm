@@ -68,30 +68,30 @@ The architecture separates batch model lifecycle operations from low-latency rea
 ```mermaid
 flowchart TD
     subgraph INGESTION ["1. Data Ingestion"]
-        A[("MongoDB Atlas\n(or local CSV)")] -->|Export Collection| B["Raw Feature Store"]
+        A[("MongoDB Atlas<br/>or local CSV")] -->|Export Collection| B["Raw Feature Store"]
         B -->|Stratified Split| C["Train Dataset (80%)"]
         B -->|Stratified Split| D["Test Dataset (20%)"]
     end
 
     subgraph VALIDATION ["2. Data Validation"]
-        C & D --> E["Schema Validation\n(Column types, domains)"]
-        E --> F["Evidently AI\nData Drift Report"]
+        C & D --> E["Schema Validation<br/>(Column types, domains)"]
+        E --> F["Evidently AI<br/>Data Drift Report"]
     end
 
     subgraph TRANSFORMATION ["3. Data Transformation"]
-        F -->|Passed| G["Feature Engineering\n(company_age calculation)"]
-        G --> H["ColumnTransformer\n(OneHotEncoder + StandardScaler)"]
-        H --> I["SMOTE Oversampling\n(Balance Minority Class)"]
+        F -->|Passed| G["Feature Engineering<br/>(company_age calculation)"]
+        G --> H["ColumnTransformer<br/>(OneHotEncoder + StandardScaler)"]
+        H --> I["SMOTE Oversampling<br/>(Balance Minority Class)"]
     end
 
     subgraph TRAINING ["4. Model Training & Evaluation"]
-        I --> J["Model Benchmark\n(RF, KNN, XGBoost, CatBoost)"]
-        J --> K["Best Model Selection\n(CatBoost - F1: 0.617)"]
-        K --> L{"Model Evaluation\nCandidate vs. Production"}
+        I --> J["Model Benchmark<br/>(RF, KNN, XGBoost, CatBoost)"]
+        J --> K["Best Model Selection<br/>(CatBoost - F1: 0.617)"]
+        K --> L{"Model Evaluation<br/>Candidate vs. Production"}
     end
 
     subgraph PUSHER ["5. Model Deployment"]
-        L -->|F1 Improvement >= threshold| M["Model Pusher\nSave to final_model/model.pkl"]
+        L -->|"F1 Score Improved"| M["Model Pusher<br/>Save to final_model/model.pkl"]
         L -->|Rejected| N["Discard Candidate"]
         M --> O["FastAPI Production Engine"]
     end
@@ -107,11 +107,11 @@ flowchart TD
 
 ```mermaid
 flowchart LR
-    USER["👤 Client Browser / API"] -->|POST /predict (JSON)| API["⚡ FastAPI Endpoint"]
+    USER["👤 Client Browser / API"] -->|"POST /predict"| API["⚡ FastAPI Endpoint"]
     API --> PIPELINE["USvisaClassifier Pipeline"]
-    PIPELINE --> PREPROCESSOR["Pretrained Preprocessor\n(StandardScaler + OneHot)"]
+    PIPELINE --> PREPROCESSOR["Pretrained Preprocessor<br/>(StandardScaler + OneHot)"]
     PREPROCESSOR --> MODEL["CatBoost Champion Model"]
-    MODEL --> RESPONSE["{ status: true, prediction: 'Visa-Approved' }"]
+    MODEL --> RESPONSE["Prediction Result<br/>(Approved / Denied)"]
     RESPONSE --> USER
 ```
 
