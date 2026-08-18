@@ -2,6 +2,7 @@
 services:
   - type: web
     name: usvisa-demo            # you can change the name; it becomes part of the URL
+    plan: free
     env: docker
     dockerfilePath: Dockerfile   # use the existing Dockerfile
     envVars:
