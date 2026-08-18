@@ -1,0 +1,15 @@
+# render.yaml – free‑cloud demo for Render.com
+services:
+  - type: web
+    name: usvisa-demo            # you can change the name; it becomes part of the URL
+    env: docker
+    dockerfilePath: Dockerfile   # use the existing Dockerfile
+    envVars:
+      - key: APP_HOST
+        value: "0.0.0.0"
+      - key: APP_PORT
+        value: "8080"
+    healthCheckPath: /health
+    healthCheckTimeoutSeconds: 2
+    healthCheckGracePeriodSeconds: 5
+    autoDeploy: true
