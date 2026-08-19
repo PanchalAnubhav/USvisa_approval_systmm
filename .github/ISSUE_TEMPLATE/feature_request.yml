@@ -1,0 +1,103 @@
+name: Feature Request
+description: Suggest an improvement or new feature for the US Visa Approval System.
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Thank you for suggesting an improvement!
+
+        Please explain the problem or use case behind your proposal so that the feature can be evaluated properly.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or Use Case
+      description: What problem would this feature solve?
+      placeholder: |
+        Describe the problem, limitation, or use case that motivated this request.
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: Describe the feature or improvement you would like to see.
+      placeholder: |
+        Describe how you would like the application to behave.
+    validations:
+      required: true
+
+  - type: textarea
+    id: benefit
+    attributes:
+      label: Expected Benefit
+      description: Explain why this feature would be useful.
+      placeholder: |
+        Explain how this would improve the project, user experience, ML pipeline, deployment, or maintainability.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Feature Category
+      description: Which area of the project would this feature primarily affect?
+      options:
+        - Machine Learning
+        - Data Pipeline
+        - Data Validation
+        - Model Training
+        - Prediction Pipeline
+        - API
+        - User Interface
+        - Database
+        - Deployment
+        - AWS / MLOps
+        - Documentation
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: implementation
+    attributes:
+      label: Possible Implementation
+      description: If you have an idea about how this could be implemented, describe it here.
+      placeholder: |
+        Describe a possible implementation or technical approach.
+    validations:
+      required: false
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Describe alternative solutions or features you considered.
+      placeholder: |
+        Describe other approaches you considered and why they may not be suitable.
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Add screenshots, examples, references, or other relevant information.
+      placeholder: |
+        Add any additional context here.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I have searched the existing issues and could not find a duplicate.
+          required: true
+        - label: This feature is relevant to the purpose of this project.
+          required: true
