@@ -1,0 +1,133 @@
+name: Bug Report
+description: Report a reproducible problem or unexpected behavior in the US Visa Approval System.
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Thank you for reporting a bug!
+
+        Please provide as much relevant information as possible so the issue can be reproduced and investigated efficiently.
+
+        **Do not include passwords, API keys, MongoDB credentials, or other sensitive information.**
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: Clearly describe the problem you encountered.
+      placeholder: |
+        Describe what happened and where you encountered the problem.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: Provide the exact steps required to reproduce the issue.
+      placeholder: |
+        1. Start the application
+        2. Navigate to ...
+        3. Enter ...
+        4. Click ...
+        5. Observe ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: Describe what you expected the application or pipeline to do.
+      placeholder: |
+        The application should...
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: Describe what actually happened.
+      placeholder: |
+        Instead, the application...
+    validations:
+      required: true
+
+  - type: textarea
+    id: error
+    attributes:
+      label: Error Message or Logs
+      description: Paste the relevant error message or logs. Remove any sensitive information before submitting.
+      placeholder: |
+        Paste the relevant traceback or logs here.
+      render: text
+    validations:
+      required: false
+
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Environment
+      description: Where did you encounter the issue?
+      options:
+        - Local Development
+        - Render Deployment
+        - AWS Deployment
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: python-version
+    attributes:
+      label: Python Version
+      description: Which Python version are you using?
+      placeholder: "Example: 3.11.9"
+    validations:
+      required: false
+
+  - type: input
+    id: branch
+    attributes:
+      label: Branch or Commit
+      description: Provide the branch name or commit hash where the issue occurred.
+      placeholder: "Example: free-deployment / abc1234"
+    validations:
+      required: false
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots
+      description: If applicable, add screenshots that help explain the problem.
+      placeholder: |
+        Drag and drop screenshots here.
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Add any other information that may help investigate the issue.
+      placeholder: |
+        Add any additional information here.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      description: Please confirm the following before submitting the issue.
+      options:
+        - label: I have searched the existing issues and could not find a duplicate.
+          required: true
+        - label: I have removed passwords, API keys, database credentials, and other sensitive information.
+          required: true
+        - label: I have provided enough information to reproduce the issue.
+          required: true
